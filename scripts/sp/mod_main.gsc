@@ -5,6 +5,7 @@ main()
 
 init()
 {
+	level.zombie_counter_zombies = 0;
 	SetDvar( "player_lastStandBleedoutTime", 45 );
 }
 
@@ -66,21 +67,34 @@ enemy_counter_hud()
 
 	flag_wait( "all_players_connected" );
 	wait 10;
-
+	level thread count_round_enemies();
 	enemy_counter_hud.alpha = 1;
 	while (1)
 	{
-		enemies = get_enemy_count() + level.zombie_total;
-
-		if (enemies == 0)
+		while ( level.zombie_total < 1 )
 		{
-			enemy_counter_hud setText("");
+			enemy_counter_hud.alpha = 0;
+			wait 1;
 		}
-		else
-		{
-			enemy_counter_hud setValue(enemies);
-		}
-
+		
+		enemies = get_enemy_count() + level.zombie_counter_zombies;
+		enemy_counter_hud setValue( enemies );
 		wait 0.05;
+	}
+}
+
+count_round_enemies()
+{
+	while ( true )
+	{
+		while ( level.zombie_total < 1 )
+		{
+			wait 1;
+		} 
+		level.zombie_counter_zombies = level.zombie_total;
+		while ( level.zombie_total > 0 )
+		{
+			wait 1;
+		}
 	}
 }
