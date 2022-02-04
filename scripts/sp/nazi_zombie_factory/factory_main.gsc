@@ -1,7 +1,12 @@
+#include maps\_zombiemode_tesla;
+#include maps\_zombiemode_utility;
+#include maps\_utility;
+#include common_scripts\utility;
+
 main()
 {
-	replaceFunc( maps/_zombiemode_tesla::tesla_arc_damage, ::tesla_arc_damage_override );
-	replaceFunc( maps/_zombiemode_tesla::tesla_end_arc_damage, ::tesla_end_arc_damage_override );
+	replaceFunc( maps\_zombiemode_tesla::tesla_arc_damage, ::tesla_arc_damage_override );
+	replaceFunc( maps\_zombiemode_tesla::tesla_end_arc_damage, ::tesla_end_arc_damage_override );
 }
 
 tesla_arc_damage_override( source_enemy, player, arc_num )
@@ -53,7 +58,7 @@ tesla_end_arc_damage_override( arc_num, enemies_hit_num, is_upgraded )
 	}
 
 	radius_decay = level.zombie_vars["tesla_radius_decay"] * arc_num;
-	if ( level.zombie_vars["tesla_radius_start"] - radius_decay <= 0 ))
+	if ( level.zombie_vars["tesla_radius_start"] - radius_decay <= 0 )
 	{
 		return true;
 	}
