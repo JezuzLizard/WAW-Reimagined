@@ -4,15 +4,6 @@
 #include maps\_utility;
 #include common_scripts\utility;
 
-main()
-{
-	replaceFunc( maps\_zombiemode_tesla::tesla_arc_damage, ::tesla_arc_damage_override );
-	replaceFunc( maps\_zombiemode_tesla::tesla_end_arc_damage, ::tesla_end_arc_damage_override );
-	// replaceFunc( maps\_zombiemode::round_think, ::round_think_override );
-	replaceFunc( maps\_zombiemode::round_wait, ::round_wait_override );
-	replaceFunc( maps\_zombiemode::round_spawning, ::round_spawning_override );
-}
-
 tesla_arc_damage_override( source_enemy, player, arc_num )
 {
 	player endon( "disconnect" );
