@@ -7,6 +7,11 @@ init()
 {
 	level.zombie_counter_zombies = 0;
 	SetDvar( "player_lastStandBleedoutTime", 45 );
+	level thread enemy_counter_hud();
+	level thread track_round_enemies();
+	level thread calculate_sph();
+	level thread sph_hud();
+	level.zombie_kill_times = [];
 }
 
 spawn_zombie_override( spawner, target_name ) 
@@ -48,6 +53,7 @@ zombie_death()
 {
 	self waittill( "death" );
 	level.zombie_counter_zombies--;
+	level.zombie_kill_times[ getTime() + "" ] = true;
 }
 
 enemy_counter_hud()
@@ -67,11 +73,10 @@ enemy_counter_hud()
 
 	flag_wait( "all_players_connected" );
 	wait 10;
-	level thread count_round_enemies();
 	enemy_counter_hud.alpha = 1;
 	while (1)
 	{
-		while ( level.zombie_total < 1 )
+		while ( !is_round_ongoing() )
 		{
 			enemy_counter_hud.alpha = 0;
 			wait 1;
@@ -83,18 +88,82 @@ enemy_counter_hud()
 	}
 }
 
-count_round_enemies()
+is_round_ongoing()
 {
+	return ( get_enemy_count() + level.zombie_total ) > 0;
+}
+
+track_round_enemies()
+{
+	flag_wait( "all_players_connected" );
+	wait 10;
+
 	while ( true )
 	{
-		while ( level.zombie_total < 1 )
+		while ( !is_round_ongoing() )
 		{
 			wait 1;
 		} 
 		level.zombie_counter_zombies = level.zombie_total;
-		while ( level.zombie_total > 0 )
+		level.zombie_starting_total = level.zombie_total;
+		while ( is_round_ongoing() )
 		{
 			wait 1;
 		}
+	}
+}
+
+sph_hud()
+{
+	enemy_counter_hud = newHudElem();
+	enemy_counter_hud.alignx = "left";
+	enemy_counter_hud.aligny = "top";
+	enemy_counter_hud.horzalign = "user_left";
+	enemy_counter_hud.vertalign = "user_top";
+	enemy_counter_hud.x -= 5;
+	enemy_counter_hud.y += 12;
+	enemy_counter_hud.fontscale = 1.4;
+	enemy_counter_hud.alpha = 0;
+	enemy_counter_hud.color = ( 1, 1, 1 );
+	enemy_counter_hud.hidewheninmenu = 1;
+	enemy_counter_hud.label = &"SPH: ";
+
+	flag_wait( "all_players_connected" );
+	wait 10;
+	enemy_counter_hud.alpha = 1;
+	while (1)
+	{
+		while ( !is_round_ongoing() )
+		{
+			enemy_counter_hud.alpha = 0;
+			wait 1;
+		}
+		enemy_counter_hud setValue( level.sph_hud_counter );
+		wait 0.05;
+	}
+}
+
+calculate_sph()
+{
+	while ( true )
+	{
+		wait 0.05;
+		kill_times = getArrayKeys( level.zombie_kill_times );
+		now = getTime();
+		kills_this_minute = 0;
+		for ( i = 0; i < kill_times.size; i++ )
+		{
+			kill_time = kill_times[ i ];
+			if ( ( now - int( kill_time ) ) > 60000 )
+			{
+				level.zombie_kill_times[ kill_time ] = undefined;
+				continue;
+			}
+			kills_this_minute++;
+		}
+		hordes_per_minute = kills_this_minute / 24;
+		hordes_per_second = hordes_per_minute / 60;
+		seconds_per_horde = 1 / hordes_per_second;
+		level.sph_hud_counter = seconds_per_horde;
 	}
 }
