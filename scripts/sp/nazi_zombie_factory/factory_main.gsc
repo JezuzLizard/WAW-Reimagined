@@ -2,6 +2,7 @@
 #include maps\_zombiemode_tesla;
 #include maps\_utility;
 #include common_scripts\utility;
+#include maps\nazi_zombie_factory;
 
 tesla_arc_damage_override( source_enemy, player, arc_num )
 {
@@ -319,4 +320,246 @@ round_spawning_override()
 
 	}
 
+}
+
+electric_trap_think_override( enable_flag )
+{	
+	self sethintstring(&"ZOMBIE_FLAMES_UNAVAILABLE");
+	self.zombie_cost = 1000;
+	
+	self thread electric_trap_dialog();
+
+	// get a list of all of the other triggers with the same name
+	triggers = getentarray( self.targetname, "targetname" );
+	flag_wait( "electricity_on" );
+
+	// Get the damage trigger.  This is the unifying element to let us know it's been activated.
+	self.zombie_dmg_trig = getent(self.target,"targetname");
+	self.zombie_dmg_trig.in_use = 0;
+
+	// Set buy string
+	self sethintstring(&"ZOMBIE_BUTTON_NORTH_FLAMES");
+
+	// Getting the light that's related is a little esoteric, but there isn't
+	// a better way at the moment.  It uses linknames, which are really dodgy.
+	light_name = "";	// scope declaration
+	tswitch = getent(self.script_linkto,"script_linkname");
+	switch ( tswitch.script_linkname )
+	{
+	case "10":	// wnuen
+	case "11":
+		light_name = "zapper_light_wuen";	
+		break;
+
+	case "20":	// warehouse
+	case "21":
+		light_name = "zapper_light_warehouse";
+		break;
+
+	case "30":	// Bridge
+	case "31":
+		light_name = "zapper_light_bridge";
+		break;
+	}
+
+	// The power is now on, but keep it disabled until a certain condition is met
+	//	such as opening the door it is blocking or waiting for the bridge to lower.
+	if ( !flag( enable_flag ) )
+	{
+		self trigger_off();
+
+		zapper_light_red( light_name );
+		flag_wait( enable_flag );
+
+		self trigger_on();
+	}
+
+	// Open for business!  
+	zapper_light_green( light_name );
+
+	while(1)
+	{
+		//valve_trigs = getentarray(self.script_noteworthy ,"script_noteworthy");		
+	
+		//wait until someone uses the valve
+		self waittill("trigger",who);
+		if( who in_revive_trigger() )
+		{
+			continue;
+		}
+		
+		if( is_player_valid( who ) )
+		{
+			if( who.score >= self.zombie_cost )
+			{				
+				if(!self.zombie_dmg_trig.in_use)
+				{
+					self.zombie_dmg_trig.in_use = 1;
+
+					//turn off the valve triggers associated with this trap until available again
+					array_thread (triggers, ::trigger_off);
+
+					play_sound_at_pos( "purchase", who.origin );
+					self thread electric_trap_move_switch(self);
+					//need to play a 'woosh' sound here, like a gas furnace starting up
+					self waittill("switch_activated");
+					//set the score
+					who maps\_zombiemode_score::minus_to_player_score( self.zombie_cost );
+
+					//this trigger detects zombies walking thru the flames
+					self.zombie_dmg_trig trigger_on();
+
+					//play the flame FX and do the actual damage
+					self thread activate_electric_trap_override( who );					
+
+					//wait until done and then re-enable the valve for purchase again
+					self waittill("elec_done");
+					
+					clientnotify(self.script_string +"off");
+										
+					//delete any FX ents
+					if(isDefined(self.fx_org))
+					{
+						self.fx_org delete();
+					}
+					if(isDefined(self.zapper_fx_org))
+					{
+						self.zapper_fx_org delete();
+					}
+					if(isDefined(self.zapper_fx_switch_org))
+					{
+						self.zapper_fx_switch_org delete();
+					}
+										
+					//turn the damage detection trigger off until the flames are used again
+			 		self.zombie_dmg_trig trigger_off();
+					wait(25);
+
+					array_thread (triggers, ::trigger_on);
+
+					//COLLIN: Play the 'alarm' sound to alert players that the traps are available again (playing on a temp ent in case the PA is already in use.
+					//speakerA = getstruct("loudspeaker", "targetname");
+					//playsoundatposition("warning", speakera.origin);
+					self notify("available");
+
+					self.zombie_dmg_trig.in_use = 0;
+				}
+			}
+		}
+	}
+}
+
+activate_electric_trap_override( who )
+{
+	if(isDefined(self.script_string) && self.script_string == "warehouse")
+	{
+		clientnotify("warehouse");
+	}
+	else if(isDefined(self.script_string) && self.script_string == "wuen")
+	{
+		clientnotify("wuen");
+	}
+	else
+	{
+		clientnotify("bridge");
+	}	
+		
+	clientnotify(self.target);
+	
+	fire_points = getstructarray(self.target,"targetname");
+	
+	for(i=0;i<fire_points.size;i++)
+	{
+		wait_network_frame();
+		fire_points[i] thread electric_trap_fx(self);		
+	}
+	
+	//do the damage
+	self.zombie_dmg_trig thread elec_barrier_damage_override( who );
+	
+	// reset the zapper model
+	level waittill("arc_done");
+}
+
+elec_barrier_damage_override( trap_activator )
+{	
+	while(1)
+	{
+		self waittill("trigger",ent);
+		
+		//player is standing electricity, dumbass
+		if(isplayer(ent) )
+		{
+			ent thread player_elec_damage();
+		}
+		else
+		{
+			if(!isDefined(ent.marked_for_death))
+			{
+				ent.marked_for_death = true;
+				trap_activator.kills++;
+				trap_activator give_player_score( 10 );
+				ent thread zombie_elec_death_override( randomint(100) );
+			}
+		}
+	}
+}
+
+zombie_elec_death_override(flame_chance)
+{
+	self endon("death");
+	if(flame_chance > 90 && level.burning_zombies.size < 6)
+	{
+		level.burning_zombies[level.burning_zombies.size] = self;
+		self thread zombie_flame_watch();
+		self playsound("ignite");
+		self thread animscripts\death::flame_death_fx();
+		//wait(randomfloat(1.25));		
+	}
+	else
+	{
+		refs[0] = "guts";
+		refs[1] = "right_arm"; 
+		refs[2] = "left_arm"; 
+		refs[3] = "right_leg"; 
+		refs[4] = "left_leg"; 
+		refs[5] = "no_legs";
+		refs[6] = "head";
+		self.a.gib_ref = refs[randomint(refs.size)];
+		playsoundatposition("zombie_arc", self.origin);
+		if( !self enemy_is_dog() && randomint(100) > 50 )
+		{
+			self thread electroctute_death_fx();
+			self thread play_elec_vocals();
+		}
+		//wait(randomfloat(1.25));
+		self playsound("zombie_arc");
+	}
+	self dodamage(self.health + 666, self.origin);
+}
+
+// include_powerups_override()
+// {
+// 	include_powerup( "nuke" );
+// 	include_powerup( "insta_kill" );
+// 	include_powerup( "double_points" );
+// 	include_powerup( "full_ammo" );
+// }
+
+give_player_score( points )
+{
+	if( level.intermission )
+	{
+		return;
+	}
+	if( !is_player_valid( self ) )
+	{
+		return;
+	}
+	points = round_up_to_ten( points ) * level.zombie_vars["zombie_point_scalar"];
+	self.score += points; 
+	self.score_total += points;
+	//stat tracking
+	self.stats["score"] = self.score_total;
+	self set_player_score_hud(); 
 }
