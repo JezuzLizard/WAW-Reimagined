@@ -710,3 +710,83 @@ nuke_powerup_override( drop_item )
 	}
 
 }
+
+teleport_pad_active_think_override( index )
+{
+	self setcursorhint( "HINT_NOICON" );
+	self.teleport_active = true;
+	user = undefined;
+	while ( 1 )
+	{
+		self waittill( "trigger", user );
+		if ( is_player_valid( user ) && user.score >= level.teleport_cost && !level.is_cooldown )
+		{
+			for ( i = 0; i < level.teleporter_pad_trig.size; i++ )
+			{
+				level.teleporter_pad_trig[i] maps\nazi_zombie_factory_teleporter::teleport_trigger_invisible( true );
+			}
+			user maps\_zombiemode_score::minus_to_player_score( level.teleport_cost );
+			self maps\nazi_zombie_factory_teleporter::player_teleporting( index );
+			level.teleport_cost += 3000;
+		}
+	}
+}
+
+reset_teleporter_cost()
+{
+	while ( true )
+	{
+		level waittill( "start_of_round" );
+		level.teleport_cost = 1500;
+	}
+}
+
+special_drop_setup_override()
+{
+	powerup = undefined;
+	is_powerup = true;
+	powerup = maps\_zombiemode_powerups::get_next_powerup();
+	switch ( powerup )
+	{
+	case "nuke":
+	case "insta_kill":
+	case "double_points":
+	case "full_ammo":
+		break;
+	default:
+		is_powerup = false;
+		Playfx( level._effect["lightning_dog_spawn"], self.origin );
+		playsoundatposition( "pre_spawn", self.origin );
+		wait( 1.5 );
+		playsoundatposition( "bolt", self.origin );
+		Earthquake( 0.5, 0.75, self.origin, 1000);
+		PlayRumbleOnPosition("explosion_generic", self.origin);
+		playsoundatposition( "spawn", self.origin );
+		wait( 1.0 );
+		thread play_sound_2d( "sam_nospawn" );
+		self Delete();
+	}
+	if ( is_powerup )
+	{
+		Playfx( level._effect["lightning_dog_spawn"], self.origin );
+		playsoundatposition( "pre_spawn", self.origin );
+		wait( 1.5 );
+		playsoundatposition( "bolt", self.origin );
+		Earthquake( 0.5, 0.75, self.origin, 1000);
+		PlayRumbleOnPosition("explosion_generic", self.origin);
+		playsoundatposition( "spawn", self.origin );
+		struct = level.zombie_powerups[powerup];
+		self SetModel( struct.model_name );
+		playsoundatposition("spawn_powerup", self.origin);
+		self.powerup_name 	= struct.powerup_name;
+		self.hint 			= struct.hint;
+		if( IsDefined( struct.fx ) )
+		{
+			self.fx = struct.fx;
+		}
+		self PlayLoopSound("spawn_powerup_loop");
+		self thread maps\_zombiemode_powerups::powerup_timeout();
+		self thread maps\_zombiemode_powerups::powerup_wobble();
+		self thread maps\_zombiemode_powerups::powerup_grab();
+	}
+}
