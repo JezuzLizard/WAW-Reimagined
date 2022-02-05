@@ -387,7 +387,7 @@ electric_trap_think_override( enable_flag )
 			continue;
 		}
 		
-		if( is_player_valid( who ) )
+		if( maps\_zombiemode_utility::is_player_valid( who ) )
 		{
 			if( who.score >= self.zombie_cost )
 			{				
@@ -551,16 +551,16 @@ give_player_score( points )
 	{
 		return;
 	}
-	if( !is_player_valid( self ) )
+	if( !maps\_zombiemode_utility::is_player_valid( self ) )
 	{
 		return;
 	}
-	points = round_up_to_ten( points ) * level.zombie_vars["zombie_point_scalar"];
+	points = maps\_zombiemode_utility::round_up_to_ten( points ) * level.zombie_vars["zombie_point_scalar"];
 	self.score += points; 
 	self.score_total += points;
 	//stat tracking
 	self.stats["score"] = self.score_total;
-	self set_player_score_hud(); 
+	self maps\_zombiemode_score::set_player_score_hud(); 
 }
 
 include_weapons_override()
