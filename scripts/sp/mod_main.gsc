@@ -13,6 +13,7 @@ init()
 	level thread enemy_counter_hud();
 	level thread calculate_sph();
 	level thread sph_hud();
+	level thread insta_kill_rounds_tracker();
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
 }
@@ -159,4 +160,58 @@ calculate_sph()
 			level.sph_hud_counter = 0;
 		}
 	}
+}
+
+insta_kill_rounds_tracker()
+{
+	level.postInstaKillRounds = 0;
+	while ( 1 )
+	{
+		level waittill( "start_of_round" );
+		wait 0.5;
+		if ( level.round_number >= 31 )
+		{
+			health = calculate_insta_kill_rounds();
+			level.postInstaKillRounds++;
+		}
+		if ( isDefined( health ) )
+		{
+			level.zombie_health = health;
+		}
+		if ( is_true( level.roundIsInstaKill ) )
+		{
+			players = get_players();
+			for ( i = 0; i < players.size; i++ )
+			{
+				players[ i ] iprintln( "All zombies are insta kill this round" );
+			}
+		}
+	}
+}
+
+calculate_insta_kill_rounds()
+{
+	level.roundIsInstaKill = 0;
+	if ( level.round_number >= 163 )
+	{
+		return undefined;
+	}
+	health = level.zombie_vars[ "zombie_health_start" ];
+	for ( i = 2; i <= ( level.postInstaKillRounds + 163 ); i++ )
+	{
+		if ( i >= 10 )
+		{
+			health += int( health * level.zombie_vars[ "zombie_health_increase_multiplier" ] );
+		}
+		else
+		{
+			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
+		}
+	}
+	if ( health < 0 )
+	{
+		level.roundIsInstaKill = 1;
+		return 20;
+	}
+	return undefined;
 }
