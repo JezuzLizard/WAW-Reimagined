@@ -1,4 +1,3 @@
-#include maps\_zombiemode;
 #include maps\_zombiemode_tesla;
 #include maps\_utility;
 #include common_scripts\utility;
@@ -296,7 +295,7 @@ round_spawning_override()
 		if( IsDefined( ai ) )
 		{
 			level.zombie_total--;
-			ai thread round_spawn_failsafe();
+			ai thread maps\_zombiemode::round_spawn_failsafe();
 			count++; 
 		}
 		wait( level.zombie_vars["zombie_spawn_delay"] ); 
