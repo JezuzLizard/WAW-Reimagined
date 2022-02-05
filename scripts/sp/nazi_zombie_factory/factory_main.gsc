@@ -572,7 +572,7 @@ include_weapons_override()
 	include_weapon( "zombie_sw_357_upgraded", false );
 
 	// Bolt Action
-	include_weapon( "zombie_kar98k" );
+	include_weapon( "zombie_kar98k", false );
 	include_weapon( "zombie_kar98k_upgraded", false );
 //	include_weapon( "springfield");		
 //	include_weapon( "zombie_type99_rifle" );
@@ -583,13 +583,13 @@ include_weapons_override()
 	include_weapon( "zombie_m1carbine_upgraded", false );
 	include_weapon( "zombie_m1garand" );
 	include_weapon( "zombie_m1garand_upgraded", false );
-	include_weapon( "zombie_gewehr43" );
+	include_weapon( "zombie_gewehr43", false );
 	include_weapon( "zombie_gewehr43_upgraded", false );
 
 	// Full Auto
 	include_weapon( "zombie_stg44" );
 	include_weapon( "zombie_stg44_upgraded", false );
-	include_weapon( "zombie_thompson" );
+	include_weapon( "zombie_thompson", false );
 	include_weapon( "zombie_thompson_upgraded", false );
 	include_weapon( "zombie_mp40" );
 	include_weapon( "zombie_mp40_upgraded", false );
@@ -617,10 +617,10 @@ include_weapons_override()
 	include_weapon( "m2_flamethrower_zombie_upgraded", false );
 
 	// Shotgun
-	include_weapon( "zombie_doublebarrel" );
+	include_weapon( "zombie_doublebarrel", false );
 	include_weapon( "zombie_doublebarrel_upgraded", false );
 	//include_weapon( "zombie_doublebarrel_sawed" );
-	include_weapon( "zombie_shotgun" );
+	include_weapon( "zombie_shotgun", false );
 	include_weapon( "zombie_shotgun_upgraded", false );
 
 	// Heavy MG
