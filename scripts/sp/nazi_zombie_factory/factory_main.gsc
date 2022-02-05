@@ -639,11 +639,11 @@ include_weapons_override()
 	maps\_zombiemode_utility::include_weapon( "panzerschrek_zombie_upgraded", false );
 
 	// Special
-	maps\_zombiemode_utility::include_weapon( "ray_gun", true, ::factory_ray_gun_weighting_func );
+	maps\_zombiemode_utility::include_weapon( "ray_gun", true, maps\nazi_zombie_factory::factory_ray_gun_weighting_func );
 	maps\_zombiemode_utility::include_weapon( "ray_gun_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "tesla_gun", true );
 	maps\_zombiemode_utility::include_weapon( "tesla_gun_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_cymbal_monkey", true, ::factory_cymbal_monkey_weighting_func );
+	maps\_zombiemode_utility::include_weapon( "zombie_cymbal_monkey", true, maps\nazi_zombie_factory::factory_cymbal_monkey_weighting_func );
 
 
 	//bouncing betties
