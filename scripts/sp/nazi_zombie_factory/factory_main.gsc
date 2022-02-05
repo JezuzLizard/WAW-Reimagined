@@ -1,6 +1,5 @@
 #include maps\_zombiemode;
 #include maps\_zombiemode_tesla;
-#include maps\_zombiemode_utility;
 #include maps\_utility;
 #include common_scripts\utility;
 
@@ -228,7 +227,7 @@ round_spawning_override()
 		old_spawn = spawn_point;
 
 	//	iPrintLn(spawn_point.targetname + " " + level.zombie_vars["zombie_spawn_delay"]);
-		while( get_enemy_count() > 31 )
+		while( maps\_zombiemode_utility::get_enemy_count() > 31 )
 		{
 			wait( 0.05 );
 		}
@@ -292,7 +291,7 @@ round_spawning_override()
 			}
 		}
 
-		ai = spawn_zombie( spawn_point ); 
+		ai = maps\_zombiemode_utility::spawn_zombie( spawn_point ); 
 		if( IsDefined( ai ) )
 		{
 			level.zombie_total--;
