@@ -682,7 +682,7 @@ nuke_powerup_override( drop_item )
 			continue;
 		}
 
-		if( is_magic_bullet_shield_enabled( zombies[i] ) )
+		if( maps\_zombiemode_utility::is_magic_bullet_shield_enabled( zombies[i] ) )
 		{
 			continue;
 		}
