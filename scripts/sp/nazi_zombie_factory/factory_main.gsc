@@ -1,7 +1,6 @@
 #include maps\_zombiemode_tesla;
 #include maps\_utility;
 #include common_scripts\utility;
-#include maps\nazi_zombie_factory;
 
 tesla_arc_damage_override( source_enemy, player, arc_num )
 {
@@ -326,7 +325,7 @@ electric_trap_think_override( enable_flag )
 	self sethintstring(&"ZOMBIE_FLAMES_UNAVAILABLE");
 	self.zombie_cost = 1000;
 	
-	self thread electric_trap_dialog();
+	self thread maps\nazi_zombie_factory::electric_trap_dialog();
 
 	// get a list of all of the other triggers with the same name
 	triggers = getentarray( self.targetname, "targetname" );
@@ -399,7 +398,7 @@ electric_trap_think_override( enable_flag )
 					array_thread (triggers, ::trigger_off);
 
 					maps\_zombiemode_utility::play_sound_at_pos( "purchase", who.origin );
-					self thread electric_trap_move_switch(self);
+					self thread maps\nazi_zombie_factory::electric_trap_move_switch(self);
 					//need to play a 'woosh' sound here, like a gas furnace starting up
 					self waittill("switch_activated");
 					//set the score
@@ -470,7 +469,7 @@ activate_electric_trap_override( who )
 	for(i=0;i<fire_points.size;i++)
 	{
 		wait_network_frame();
-		fire_points[i] thread electric_trap_fx(self);		
+		fire_points[i] thread maps\nazi_zombie_factory::electric_trap_fx(self);		
 	}
 	
 	//do the damage
@@ -489,7 +488,7 @@ elec_barrier_damage_override( trap_activator )
 		//player is standing electricity, dumbass
 		if(isplayer(ent) )
 		{
-			ent thread player_elec_damage();
+			ent thread maps\nazi_zombie_factory::player_elec_damage();
 		}
 		else
 		{
@@ -510,7 +509,7 @@ zombie_elec_death_override(flame_chance)
 	if(flame_chance > 90 && level.burning_zombies.size < 6)
 	{
 		level.burning_zombies[level.burning_zombies.size] = self;
-		self thread zombie_flame_watch();
+		self thread maps\nazi_zombie_factory::zombie_flame_watch();
 		self playsound("ignite");
 		self thread animscripts\death::flame_death_fx();
 		//wait(randomfloat(1.25));		
@@ -528,8 +527,8 @@ zombie_elec_death_override(flame_chance)
 		playsoundatposition("zombie_arc", self.origin);
 		if( !self maps\_zombiemode_utility::enemy_is_dog() && randomint(100) > 50 )
 		{
-			self thread electroctute_death_fx();
-			self thread play_elec_vocals();
+			self thread maps\nazi_zombie_factory::electroctute_death_fx();
+			self thread maps\nazi_zombie_factory::play_elec_vocals();
 		}
 		//wait(randomfloat(1.25));
 		self playsound("zombie_arc");
@@ -586,11 +585,11 @@ include_weapons_override()
 	maps\_zombiemode_utility::include_weapon( "zombie_gewehr43_upgraded", false );
 
 	// Full Auto
-	maps\_zombiemode_utility::include_weapon( "zombie_stg44" );
+	maps\_zombiemode_utility::include_weapon( "zombie_stg44", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_stg44_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_thompson", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_thompson_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_mp40" );
+	maps\_zombiemode_utility::include_weapon( "zombie_mp40", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_mp40_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_type100_smg" );
 	maps\_zombiemode_utility::include_weapon( "zombie_type100_smg_upgraded", false );
@@ -630,7 +629,7 @@ include_weapons_override()
 
 	maps\_zombiemode_utility::include_weapon( "zombie_30cal" );
 	maps\_zombiemode_utility::include_weapon( "zombie_30cal_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_mg42" );
+	maps\_zombiemode_utility::include_weapon( "zombie_mg42", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_mg42_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_ppsh" );
 	maps\_zombiemode_utility::include_weapon( "zombie_ppsh_upgraded", false );
