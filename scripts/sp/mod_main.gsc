@@ -169,14 +169,15 @@ insta_kill_rounds_tracker()
 	{
 		level waittill( "start_of_round" );
 		wait 0.5;
+		health = undefined;
 		if ( level.round_number >= 31 )
 		{
 			health = calculate_insta_kill_rounds();
 			level.postInstaKillRounds++;
 		}
-		if ( isDefined( health ) )
+		if ( !isDefined( health ) )
 		{
-			level.zombie_health = health;
+			level.zombie_health = calculate_normal_health();
 		}
 		if ( is_true( level.roundIsInstaKill ) )
 		{
@@ -201,7 +202,7 @@ calculate_insta_kill_rounds()
 	{
 		if ( i >= 10 )
 		{
-			health += int( health * level.zombie_vars[ "zombie_health_increase_multiplier" ] );
+			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
 		}
 		else
 		{
@@ -214,4 +215,27 @@ calculate_insta_kill_rounds()
 		return 20;
 	}
 	return undefined;
+}
+
+calculate_normal_health()
+{
+	level.roundIsInstaKill = 0;
+	health = level.zombie_vars[ "zombie_health_start" ];
+	for ( i = 2; i <= level.round_number; i++ )
+	{
+		if ( i >= 10 )
+		{
+			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
+		}
+		else
+		{
+			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
+		}
+	}
+	if ( health < 0 )
+	{
+		level.roundIsInstaKill = 1;
+		return 20;
+	}
+	return health;
 }
