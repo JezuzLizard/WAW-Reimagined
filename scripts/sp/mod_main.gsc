@@ -179,13 +179,9 @@ insta_kill_rounds_tracker()
 		{
 			level.zombie_health = calculate_normal_health();
 		}
-		if ( is_true( level.roundIsInstaKill ) )
+		if ( level.roundIsInstaKill )
 		{
-			players = get_players();
-			for ( i = 0; i < players.size; i++ )
-			{
-				players[ i ] iprintln( "All zombies are insta kill this round" );
-			}
+			iprintln( "All zombies are insta kill this round" );
 		}
 	}
 }
