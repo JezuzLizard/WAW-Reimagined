@@ -382,7 +382,7 @@ electric_trap_think_override( enable_flag )
 	
 		//wait until someone uses the valve
 		self waittill("trigger",who);
-		if( who in_revive_trigger() )
+		if( who maps\_zombiemode_utility::in_revive_trigger() )
 		{
 			continue;
 		}
