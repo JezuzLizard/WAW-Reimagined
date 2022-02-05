@@ -718,7 +718,7 @@ teleport_pad_active_think_override( index )
 	while ( 1 )
 	{
 		self waittill( "trigger", user );
-		if ( is_player_valid( user ) && user.score >= level.teleport_cost && !level.is_cooldown )
+		if ( maps\_zombiemode_utility::is_player_valid( user ) && user.score >= level.teleport_cost && !level.is_cooldown )
 		{
 			for ( i = 0; i < level.teleporter_pad_trig.size; i++ )
 			{
