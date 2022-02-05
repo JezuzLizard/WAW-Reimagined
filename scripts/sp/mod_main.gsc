@@ -1,4 +1,3 @@
-#include maps\_zombiemode_utility;
 #include maps\_utility;
 #include common_scripts\utility;
 
@@ -12,7 +11,6 @@ init()
 	level.zombie_counter_zombies = 0;
 	SetDvar( "player_lastStandBleedoutTime", 45 );
 	level thread enemy_counter_hud();
-	level thread track_round_enemies();
 	level thread calculate_sph();
 	level thread sph_hud();
 	level.sph_hud_counter = 0;
@@ -57,7 +55,6 @@ spawn_zombie_override( spawner, target_name )
 zombie_death()
 {
 	self waittill( "death" );
-	level.zombie_counter_zombies--;
 	level.zombie_kill_times[ getTime() + "" ] = true;
 }
 
@@ -83,11 +80,11 @@ enemy_counter_hud()
 	{
 		while ( !is_round_ongoing() )
 		{
-			enemy_counter_hud.alpha = 0;
+			enemy_counter_hud setText( "" );
 			wait 1;
 		}
 		enemy_counter_hud.alpha = 1;
-		enemies = level.zombie_counter_zombies;
+		enemies = get_enemy_count() + level.zombie_total;
 		enemy_counter_hud setValue( enemies );
 		wait 0.05;
 	}
@@ -95,27 +92,7 @@ enemy_counter_hud()
 
 is_round_ongoing()
 {
-	return ( get_enemy_count() + level.zombie_total ) > 0;
-}
-
-track_round_enemies()
-{
-	flag_wait( "all_players_connected" );
-	wait 10;
-
-	while ( true )
-	{
-		while ( !is_round_ongoing() )
-		{
-			wait 1;
-		} 
-		level.zombie_counter_zombies = level.zombie_total;
-		level.zombie_starting_total = level.zombie_total;
-		while ( is_round_ongoing() )
-		{
-			wait 1;
-		}
-	}
+	return ( maps\_zombiemode_utility::get_enemy_count() > 0 || level.zombie_total > 0 );
 }
 
 sph_hud()
@@ -138,9 +115,9 @@ sph_hud()
 	enemy_counter_hud.alpha = 1;
 	while (1)
 	{
-		while ( !is_round_ongoing() || level.sph_hud_counter == 0 )
+		while ( level.sph_hud_counter == 0 )
 		{
-			enemy_counter_hud.alpha = 0;
+			enemy_counter_hud setText( "" );
 			wait 1;
 		}
 		enemy_counter_hud.alpha = 1;
