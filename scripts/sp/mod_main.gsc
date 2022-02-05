@@ -4,6 +4,7 @@
 main()
 {
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
+	replaceFunc( maps\_zombiemode::spectators_respawn, ::spectators_respawn_override );
 }
 
 init()
@@ -234,4 +235,44 @@ calculate_normal_health()
 		return 20;
 	}
 	return health;
+}
+
+spectators_respawn_override()
+{
+	level endon( "between_round_over" );
+
+	if( !IsDefined( level.zombie_vars["spectators_respawn"] ) || !level.zombie_vars["spectators_respawn"] )
+	{
+		return;
+	}
+
+	if( !IsDefined( level.custom_spawnPlayer ) )
+	{
+		// Custom spawn call for when they respawn from spectator
+		level.custom_spawnPlayer = maps\_zombiemode::spectator_respawn;
+	}
+
+	while( 1 )
+	{
+		players = get_players();
+		for( i = 0; i < players.size; i++ )
+		{
+			if( players[i].sessionstate == "spectator" )
+			{
+				players[i] [[level.spawnPlayer]]();
+				if( isDefined( players[i].has_altmelee ) && players[i].has_altmelee )
+				{
+					players[i] SetPerk( "specialty_altmelee" );
+				}
+				if (isDefined(level.script) && players[ i ].score < (level.round_number * 500))
+				{
+					players[i].old_score = players[i].score;
+					players[i].score = level.round_number * 500;
+					players[i] maps\_zombiemode_score::set_player_score_hud();
+				}
+			}
+		}
+
+		wait( 1 );
+	}
 }
