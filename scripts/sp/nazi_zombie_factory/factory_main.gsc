@@ -526,7 +526,7 @@ zombie_elec_death_override(flame_chance)
 		refs[6] = "head";
 		self.a.gib_ref = refs[randomint(refs.size)];
 		playsoundatposition("zombie_arc", self.origin);
-		if( !self enemy_is_dog() && randomint(100) > 50 )
+		if( !self maps\_zombiemode_utility::enemy_is_dog() && randomint(100) > 50 )
 		{
 			self thread electroctute_death_fx();
 			self thread play_elec_vocals();
