@@ -366,14 +366,14 @@ electric_trap_think_override( enable_flag )
 	{
 		self trigger_off();
 
-		zapper_light_red( light_name );
+		maps\nazi_zombie_factory::zapper_light_red( light_name );
 		flag_wait( enable_flag );
 
 		self trigger_on();
 	}
 
 	// Open for business!  
-	zapper_light_green( light_name );
+	maps\nazi_zombie_factory::zapper_light_green( light_name );
 
 	while(1)
 	{
