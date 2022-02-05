@@ -563,3 +563,97 @@ give_player_score( points )
 	self.stats["score"] = self.score_total;
 	self set_player_score_hud(); 
 }
+
+include_weapons_override()
+{
+	include_weapon( "zombie_colt" );
+	include_weapon( "zombie_colt_upgraded", false );
+	include_weapon( "zombie_sw_357" );
+	include_weapon( "zombie_sw_357_upgraded", false );
+
+	// Bolt Action
+	include_weapon( "zombie_kar98k" );
+	include_weapon( "zombie_kar98k_upgraded", false );
+//	include_weapon( "springfield");		
+//	include_weapon( "zombie_type99_rifle" );
+//	include_weapon( "zombie_type99_rifle_upgraded", false );
+
+	// Semi Auto
+	include_weapon( "zombie_m1carbine" );
+	include_weapon( "zombie_m1carbine_upgraded", false );
+	include_weapon( "zombie_m1garand" );
+	include_weapon( "zombie_m1garand_upgraded", false );
+	include_weapon( "zombie_gewehr43" );
+	include_weapon( "zombie_gewehr43_upgraded", false );
+
+	// Full Auto
+	include_weapon( "zombie_stg44" );
+	include_weapon( "zombie_stg44_upgraded", false );
+	include_weapon( "zombie_thompson" );
+	include_weapon( "zombie_thompson_upgraded", false );
+	include_weapon( "zombie_mp40" );
+	include_weapon( "zombie_mp40_upgraded", false );
+	include_weapon( "zombie_type100_smg" );
+	include_weapon( "zombie_type100_smg_upgraded", false );
+
+	// Scoped
+	include_weapon( "ptrs41_zombie" );
+	include_weapon( "ptrs41_zombie_upgraded", false );
+//	include_weapon( "kar98k_scoped_zombie" );	// replaced with type99_rifle_scoped
+//	include_weapon( "type99_rifle_scoped_zombie" );	//
+
+	// Grenade
+	include_weapon( "molotov" );
+	include_weapon( "stielhandgranate" );
+
+	// Grenade Launcher	
+	include_weapon( "m1garand_gl_zombie" );
+	include_weapon( "m1garand_gl_zombie_upgraded", false );
+	include_weapon( "m7_launcher_zombie" );
+	include_weapon( "m7_launcher_zombie_upgraded", false );
+
+	// Flamethrower
+	include_weapon( "m2_flamethrower_zombie" );
+	include_weapon( "m2_flamethrower_zombie_upgraded", false );
+
+	// Shotgun
+	include_weapon( "zombie_doublebarrel" );
+	include_weapon( "zombie_doublebarrel_upgraded", false );
+	//include_weapon( "zombie_doublebarrel_sawed" );
+	include_weapon( "zombie_shotgun" );
+	include_weapon( "zombie_shotgun_upgraded", false );
+
+	// Heavy MG
+	include_weapon( "zombie_bar" );
+	include_weapon( "zombie_bar_upgraded", false );
+	include_weapon( "zombie_fg42" );
+	include_weapon( "zombie_fg42_upgraded", false );
+
+	include_weapon( "zombie_30cal" );
+	include_weapon( "zombie_30cal_upgraded", false );
+	include_weapon( "zombie_mg42" );
+	include_weapon( "zombie_mg42_upgraded", false );
+	include_weapon( "zombie_ppsh" );
+	include_weapon( "zombie_ppsh_upgraded", false );
+
+	// Rocket Launcher
+	include_weapon( "panzerschrek_zombie" );
+	include_weapon( "panzerschrek_zombie_upgraded", false );
+
+	// Special
+	include_weapon( "ray_gun", true, ::factory_ray_gun_weighting_func );
+	include_weapon( "ray_gun_upgraded", false );
+	include_weapon( "tesla_gun", true );
+	include_weapon( "tesla_gun_upgraded", false );
+	include_weapon( "zombie_cymbal_monkey", true, ::factory_cymbal_monkey_weighting_func );
+
+
+	//bouncing betties
+	include_weapon("mine_bouncing_betty", false);
+
+	// limited weapons
+	maps\_zombiemode_weapons::add_limited_weapon( "zombie_colt", 0 );
+	//maps\_zombiemode_weapons::add_limited_weapon( "zombie_type99_rifle", 0 );
+	maps\_zombiemode_weapons::add_limited_weapon( "zombie_gewehr43", 0 );
+	maps\_zombiemode_weapons::add_limited_weapon( "zombie_m1garand", 0 );
+}
