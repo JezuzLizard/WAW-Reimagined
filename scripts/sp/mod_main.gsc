@@ -65,8 +65,8 @@ enemy_counter_hud()
 	enemy_counter_hud = newHudElem();
 	enemy_counter_hud.alignx = "left";
 	enemy_counter_hud.aligny = "top";
-	enemy_counter_hud.horzalign = "user_left";
-	enemy_counter_hud.vertalign = "user_top";
+	enemy_counter_hud.horzalign = "left";
+	enemy_counter_hud.vertalign = "top";
 	enemy_counter_hud.x += 5;
 	enemy_counter_hud.y += 2;
 	enemy_counter_hud.fontscale = 1.4;
@@ -102,8 +102,8 @@ sph_hud()
 	enemy_counter_hud = newHudElem();
 	enemy_counter_hud.alignx = "left";
 	enemy_counter_hud.aligny = "top";
-	enemy_counter_hud.horzalign = "user_left";
-	enemy_counter_hud.vertalign = "user_top";
+	enemy_counter_hud.horzalign = "left";
+	enemy_counter_hud.vertalign = "top";
 	enemy_counter_hud.x += 5;
 	enemy_counter_hud.y += 12;
 	enemy_counter_hud.fontscale = 1.4;
