@@ -282,6 +282,7 @@ round_spawning_override()
 							{
 								maps\_zombiemode_dogs::special_dog_spawn( undefined, 1 );
 								level.zombie_total--;
+								count++;
 								wait_network_frame();
 							}
 						}
