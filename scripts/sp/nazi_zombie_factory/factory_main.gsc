@@ -538,13 +538,13 @@ zombie_elec_death_override(flame_chance)
 	self dodamage(self.health + 666, self.origin);
 }
 
-// include_powerups_override()
-// {
-// 	include_powerup( "nuke" );
-// 	include_powerup( "insta_kill" );
-// 	include_powerup( "double_points" );
-// 	include_powerup( "full_ammo" );
-// }
+include_powerups_override()
+{
+	include_powerup( "nuke" );
+	include_powerup( "insta_kill" );
+	include_powerup( "double_points" );
+	include_powerup( "full_ammo" );
+}
 
 give_player_score( points )
 {
