@@ -657,3 +657,56 @@ include_weapons_override()
 	maps\_zombiemode_weapons::add_limited_weapon( "zombie_gewehr43", 0 );
 	maps\_zombiemode_weapons::add_limited_weapon( "zombie_m1garand", 0 );
 }
+
+nuke_powerup_override( drop_item )
+{
+	zombies = getaispeciesarray("axis");
+
+	PlayFx( drop_item.fx, drop_item.origin );
+	//	players = get_players();
+	//	array_thread (players, ::nuke_flash);
+	level thread maps\_zombiemode_powerups::nuke_flash();
+
+	
+
+	zombies = get_array_of_closest( drop_item.origin, zombies );
+
+	for (i = 0; i < zombies.size; i++)
+	{
+		if( !IsDefined( zombies[i] ) )
+		{
+			continue;
+		}
+		
+		if( zombies[i].animname == "boss_zombie" )
+		{
+			continue;
+		}
+
+		if( is_magic_bullet_shield_enabled( zombies[i] ) )
+		{
+			continue;
+		}
+
+		if( i < 5 && !( zombies[i] maps\_zombiemode_utility::enemy_is_dog() ) )
+		{
+			zombies[i] thread animscripts\death::flame_death_fx();
+
+		}
+
+		if( !( zombies[i] maps\_zombiemode_utility::enemy_is_dog() ) )
+		{
+			zombies[i] maps\_zombiemode_spawner::zombie_head_gib();
+		}
+
+		zombies[i] dodamage( zombies[i].health + 666, zombies[i].origin );
+		playsoundatposition( "nuked", zombies[i].origin );
+	}
+
+	players = get_players();
+	for(i = 0; i < players.size; i++)
+	{
+		players[i] give_player_score( 400 );
+	}
+
+}
