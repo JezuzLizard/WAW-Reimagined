@@ -85,7 +85,7 @@ enemy_counter_hud()
 			wait 1;
 		}
 		enemy_counter_hud.alpha = 1;
-		enemies = get_enemy_count() + level.zombie_total;
+		enemies = maps\_zombiemode_utility::get_enemy_count() + level.zombie_total;
 		enemy_counter_hud setValue( enemies );
 		wait 0.05;
 	}
