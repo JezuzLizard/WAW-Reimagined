@@ -134,7 +134,7 @@ round_spawning_override()
 	}
 #/
 
-	ai_calculate_health(); 
+	maps\_zombiemode::ai_calculate_health(); 
 
 	count = 0; 
 
