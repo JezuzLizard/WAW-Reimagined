@@ -68,7 +68,7 @@ enemy_counter_hud()
 	enemy_counter_hud.horzalign = "left";
 	enemy_counter_hud.vertalign = "bottom";
 	enemy_counter_hud.x += 5;
-	enemy_counter_hud.y -= 60;
+	enemy_counter_hud.y -= 90;
 	enemy_counter_hud.fontscale = 1.4;
 	enemy_counter_hud.alpha = 0;
 	enemy_counter_hud.color = ( 1, 1, 1 );
@@ -105,7 +105,7 @@ sph_hud()
 	enemy_counter_hud.horzalign = "left";
 	enemy_counter_hud.vertalign = "bottom";
 	enemy_counter_hud.x += 5;
-	enemy_counter_hud.y -= 80;
+	enemy_counter_hud.y -= 120;
 	enemy_counter_hud.fontscale = 1.4;
 	enemy_counter_hud.alpha = 0;
 	enemy_counter_hud.color = ( 1, 1, 1 );
@@ -179,6 +179,10 @@ insta_kill_rounds_tracker()
 		if ( !isDefined( health ) )
 		{
 			level.zombie_health = calculate_normal_health();
+		}
+		else 
+		{
+			level.zombie_health = health;
 		}
 		if ( level.roundIsInstaKill )
 		{

@@ -591,7 +591,7 @@ include_weapons_override()
 	maps\_zombiemode_utility::include_weapon( "zombie_thompson_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_mp40", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_mp40_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_type100_smg" );
+	maps\_zombiemode_utility::include_weapon( "zombie_type100_smg", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_type100_smg_upgraded", false );
 
 	// Scoped
