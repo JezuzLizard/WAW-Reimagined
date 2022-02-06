@@ -577,7 +577,7 @@ include_weapons_override()
 //	include_weapon( "zombie_type99_rifle_upgraded", false );
 
 	// Semi Auto
-	maps\_zombiemode_utility::include_weapon( "zombie_m1carbine" );
+	maps\_zombiemode_utility::include_weapon( "zombie_m1carbine", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_m1carbine_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_m1garand" );
 	maps\_zombiemode_utility::include_weapon( "zombie_m1garand_upgraded", false );
