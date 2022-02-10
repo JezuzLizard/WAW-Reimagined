@@ -624,12 +624,12 @@ include_weapons_override()
 	// Heavy MG
 	maps\_zombiemode_utility::include_weapon( "zombie_bar" );
 	maps\_zombiemode_utility::include_weapon( "zombie_bar_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_fg42" );
+	maps\_zombiemode_utility::include_weapon( "zombie_fg42", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_fg42_upgraded", false );
 
 	maps\_zombiemode_utility::include_weapon( "zombie_30cal" );
 	maps\_zombiemode_utility::include_weapon( "zombie_30cal_upgraded", false );
-	maps\_zombiemode_utility::include_weapon( "zombie_mg42", false );
+	maps\_zombiemode_utility::include_weapon( "zombie_mg42" );
 	maps\_zombiemode_utility::include_weapon( "zombie_mg42_upgraded", false );
 	maps\_zombiemode_utility::include_weapon( "zombie_ppsh" );
 	maps\_zombiemode_utility::include_weapon( "zombie_ppsh_upgraded", false );
