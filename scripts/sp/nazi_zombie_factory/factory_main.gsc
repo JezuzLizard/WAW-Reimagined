@@ -2,6 +2,22 @@
 #include maps\_utility;
 #include common_scripts\utility;
 
+main()
+{
+	replaceFunc( maps\_zombiemode_tesla::tesla_arc_damage, ::tesla_arc_damage_override );
+	replaceFunc( maps\_zombiemode_tesla::tesla_end_arc_damage, ::tesla_end_arc_damage_override );
+	// replaceFunc( maps\_zombiemode::round_think, ::round_think_override );
+	replaceFunc( maps\_zombiemode::round_wait, ::round_wait_override );
+	replaceFunc( maps\_zombiemode::round_spawning, ::round_spawning_override );
+	replaceFunc( maps\nazi_zombie_factory::electric_trap_think, ::electric_trap_think_override );
+	replaceFunc( maps\nazi_zombie_factory::include_powerups, ::include_powerups_override );
+	replaceFunc( maps\nazi_zombie_factory::include_weapons, ::include_weapons_override );
+	replaceFunc( maps\_zombiemode_powerups::nuke_powerup, ::nuke_powerup_override );
+	replaceFunc( maps\nazi_zombie_factory_teleporter::teleport_pad_active_think, ::teleport_pad_active_think_override );
+	replaceFunc( maps\_zombiemode_powerups::special_drop_setup, ::special_drop_setup_override );
+	level thread reset_teleporter_cost();
+}
+
 tesla_arc_damage_override( source_enemy, player, arc_num )
 {
 	player endon( "disconnect" );
