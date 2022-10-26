@@ -1,22 +1,67 @@
 #include maps\_utility;
 #include common_scripts\utility;
 
+#define XP_PER_NORMAL_KILL 1
+#define XP_PER_HEAD_SHOT 2
+#define XP_FOR_ROUND_COMPLETION_BASE 4
+
 main()
 {
+	replaceFunc( maps\_zombiemode_powerups::nuke_powerup, scripts\sp\wawr_common_functions::nuke_powerup_override );
+	replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
+	replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
-	replaceFunc( maps\_zombiemode::spectators_respawn, ::spectators_respawn_override );
+	replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
+	replaceFunc( maps\_zombiemode_powerups::include_zombie_powerup, ::include_zombie_powerup_override );
+	replaceFunc( maps\_challenges_coop::mayProcessChallenges, ::mayProcessChallenges_override );
+	level._custom_func_table = [];
+	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
+	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
+	level._custom_func_table[ "enemy_is_dog" ] = getFunction( "maps/_zombiemode_utility", "enemy_is_dog" );
+	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
+	level._end_of_round_funcs = [];
+	level._end_of_round_funcs[ 0 ] = ::award_round_completion_xp;
 }
 
 init()
 {
 	level.zombie_counter_zombies = 0;
 	SetDvar( "player_lastStandBleedoutTime", 45 );
+	SetDvar( "g_fix_tesla_bug", 1 );
+	SetDvar( "g_disable_zombie_grab", 1 );
+	SetDvar( "perk_weaprateEnhanced", 1 );
+	setDvar( "scr_damagefeedback", 1 );
 	level thread enemy_counter_hud();
 	level thread calculate_sph();
 	level thread sph_hud();
 	level thread insta_kill_rounds_tracker();
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
+	level thread on_player_connect();
+}
+
+on_player_connect()
+{
+	level endon( "end_game" );
+	while ( true )
+	{
+		level waittill( "connected", player );
+		player setClientDvar( "aim_lockon_enabled", 1 );
+	}
+}
+
+include_zombie_powerup_override( powerup )
+{
+	if ( powerup == "carpenter" )
+	{
+		return;
+	}
+	func = getFunction( "maps/_zombiemode_powerups", "include_zombie_powerup" );
+	if ( isDefined( func ) )
+	{
+		disableDetourOnce( func );
+		[[ func ]]( powerup );
+	}
 }
 
 spawn_zombie_override( spawner, target_name ) 
@@ -48,6 +93,7 @@ spawn_zombie_override( spawner, target_name )
 			guy.targetname = target_name; 
 		} 
 		guy thread zombie_death();
+		guy thread watch_damage();
 		return guy;  
 	}
 
@@ -58,6 +104,37 @@ zombie_death()
 {
 	self waittill( "death" );
 	level.zombie_kill_times[ getTime() + "" ] = true;
+}
+
+watch_damage()
+{
+	while ( true )
+	{
+		self waittill( "damage", amount, inflictor, dir, point, mod, modelName, tagName );
+		if ( !isDefined( self ) )
+		{
+			break;
+		}
+		if ( !isDefined( inflictor ) || !isPlayer( inflictor ) )
+		{
+			continue;
+		}
+		if ( amount <= 0 )
+		{
+			continue;
+		}
+		// Check if zombie died.
+		if ( self.health < 1 )
+		{
+			xp_value = XP_PER_NORMAL_KILL;
+			if ( mod == "MOD_HEAD_SHOT" )
+			{
+				xp_value = XP_PER_HEAD_SHOT;
+			}
+			inflictor maps\_challenges_coop::giveRankXP( "kill", xp_value );
+			break;
+		}
+	}
 }
 
 enemy_counter_hud()
@@ -241,42 +318,18 @@ calculate_normal_health()
 	return health;
 }
 
-spectators_respawn_override()
+award_round_completion_xp()
 {
-	level endon( "between_round_over" );
-
-	if( !IsDefined( level.zombie_vars["spectators_respawn"] ) || !level.zombie_vars["spectators_respawn"] )
+	xp_value = int( ( XP_FOR_ROUND_COMPLETION_BASE * level.round_number ) / 2 ); 
+	players = get_players();
+	for ( i = 0; i < players.size; i++ )
 	{
-		return;
+		player = players[ i ];
+		player maps\_challenges_coop::giveRankXP( "round_completion", xp_value );
 	}
+}
 
-	if( !IsDefined( level.custom_spawnPlayer ) )
-	{
-		// Custom spawn call for when they respawn from spectator
-		level.custom_spawnPlayer = maps\_zombiemode::spectator_respawn;
-	}
-
-	while( 1 )
-	{
-		players = get_players();
-		for( i = 0; i < players.size; i++ )
-		{
-			if( players[i].sessionstate == "spectator" )
-			{
-				players[i] [[level.spawnPlayer]]();
-				if( isDefined( players[i].has_altmelee ) && players[i].has_altmelee )
-				{
-					players[i] SetPerk( "specialty_altmelee" );
-				}
-				if (isDefined(level.script) && players[ i ].score < (level.round_number * 500))
-				{
-					players[i].old_score = players[i].score;
-					players[i].score = level.round_number * 500;
-					players[i] maps\_zombiemode_score::set_player_score_hud();
-				}
-			}
-		}
-
-		wait( 1 );
-	}
+mayProcessChallenges_override()
+{
+	return 1;
 }
