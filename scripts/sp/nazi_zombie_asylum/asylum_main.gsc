@@ -3,5 +3,7 @@
 
 main()
 {
+	replaceFunc( maps\_zombiemode_asylum::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
+	replaceFunc( maps\_zombiemode_asylum::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 	replaceFunc( maps\_zombiemode_asylum::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 }

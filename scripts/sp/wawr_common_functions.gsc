@@ -21,6 +21,7 @@ give_player_score( points )
 
 round_wait_override()
 {
+	printConsole( "round_wait_override()" );
 	level notify( "start_of_round" );
 	func = getFunction( "maps/_zombiemode", "round_wait" );
 	disableDetourOnce( func );
@@ -29,7 +30,7 @@ round_wait_override()
 	{
 		for ( i = 0; i < level._end_of_round_funcs.size; i++ )
 		{
-			level thread [[ level._end_of_round_funcs ]]();
+			level thread [[ level._end_of_round_funcs[ i ] ]]();
 		}
 	}
 	level notify( "end_of_round" );

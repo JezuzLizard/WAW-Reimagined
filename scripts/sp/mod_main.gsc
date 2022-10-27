@@ -7,13 +7,17 @@
 
 main()
 {
+	level.script = Tolower( GetDvar( "mapname" ) );
 	replaceFunc( maps\_zombiemode_powerups::nuke_powerup, scripts\sp\wawr_common_functions::nuke_powerup_override );
-	replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
-	replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
-	replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	replaceFunc( maps\_zombiemode_powerups::include_zombie_powerup, ::include_zombie_powerup_override );
-	replaceFunc( maps\_challenges_coop::mayProcessChallenges, ::mayProcessChallenges_override );
+	replaceFunc( maps\_challenges_coop::ch_kills, ::ch_kills_override );
+	if ( level.script != "mazi_zombie_prototype" && level.script != "nazi_zombie_asylum" )
+	{
+		replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
+		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
+		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
+	}
 	level._custom_func_table = [];
 	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
 	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
@@ -21,6 +25,7 @@ main()
 	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
 	level._end_of_round_funcs = [];
 	level._end_of_round_funcs[ 0 ] = ::award_round_completion_xp;
+	setDvar( "scr_xpscale", 1 );
 }
 
 init()
@@ -93,7 +98,6 @@ spawn_zombie_override( spawner, target_name )
 			guy.targetname = target_name; 
 		} 
 		guy thread zombie_death();
-		guy thread watch_damage();
 		return guy;  
 	}
 
@@ -104,37 +108,6 @@ zombie_death()
 {
 	self waittill( "death" );
 	level.zombie_kill_times[ getTime() + "" ] = true;
-}
-
-watch_damage()
-{
-	while ( true )
-	{
-		self waittill( "damage", amount, inflictor, dir, point, mod, modelName, tagName );
-		if ( !isDefined( self ) )
-		{
-			break;
-		}
-		if ( !isDefined( inflictor ) || !isPlayer( inflictor ) )
-		{
-			continue;
-		}
-		if ( amount <= 0 )
-		{
-			continue;
-		}
-		// Check if zombie died.
-		if ( self.health < 1 )
-		{
-			xp_value = XP_PER_NORMAL_KILL;
-			if ( mod == "MOD_HEAD_SHOT" )
-			{
-				xp_value = XP_PER_HEAD_SHOT;
-			}
-			inflictor maps\_challenges_coop::giveRankXP( "kill", xp_value );
-			break;
-		}
-	}
 }
 
 enemy_counter_hud()
@@ -320,16 +293,63 @@ calculate_normal_health()
 
 award_round_completion_xp()
 {
+	printConsole( "award_round_completion_xp()" );
 	xp_value = int( ( XP_FOR_ROUND_COMPLETION_BASE * level.round_number ) / 2 ); 
 	players = get_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		player = players[ i ];
-		player maps\_challenges_coop::giveRankXP( "round_completion", xp_value );
+		player giveRankXP( "round_completion", xp_value );
 	}
 }
 
 mayProcessChallenges_override()
 {
 	return 1;
+}
+
+giveRankXP( type, value, levelEnd )
+{
+	self endon("disconnect");
+	printConsole( "giveRankXP() type: " + type + " value: " + value );
+	if(	!isDefined( levelEnd ) )
+	{
+		levelEnd = false;
+	}	
+	
+	value = int( value * level.xpScale );
+
+	switch( type )
+	{
+		case "challenge":
+			self.summary_challenge += value;
+			self.summary_xp += value;
+			break;
+		default:
+			self.summary_xp += value;
+			break;
+	}
+		
+	self maps\_challenges_coop::incRankXP( value );
+
+	if ( level.rankedMatch && maps\_challenges_coop::updateRank() && false == levelEnd )
+		self thread maps\_challenges_coop::updateRankAnnounceHUD();
+
+	// Set the XP stat after any unlocks, so that if the final stat set gets lost the unlocks won't be gone for good.
+	self maps\_challenges_coop::syncXPStat();
+}
+
+ch_kills_override( victim )
+{
+	if ( !isDefined( victim.attacker ) || !isPlayer( victim.attacker ) || victim.team == "allies" )
+		return;
+	
+	player = victim.attacker;
+
+	xp_value = XP_PER_NORMAL_KILL;
+	if ( victim.damagemod == "MOD_HEAD_SHOT" )
+	{
+		xp_value = XP_PER_HEAD_SHOT;
+	}
+	player giveRankXP( "kill", xp_value );
 }
