@@ -349,35 +349,3 @@ spectators_respawn_override()
 		wait( 1 );
 	}
 }
-
-revive_success_override( reviver )
-{
-	self notify ( "player_revived" );	
-	self reviveplayer();
-	
-	//CODER_MOD: TOMMYK 06/26/2008 - For coop scoreboards
-	reviver.revives++;
-	//stat tracking
-	reviver.stats["revives"] = reviver.revives;
-	
-	// CODER MOD: TOMMY K - 07/30/08
-	reviver thread maps\_arcademode::arcadeMode_player_revive();
-					
-	//CODER_MOD: Jay (6/17/2008): callback to revive challenge
-	if( isdefined( level.missionCallbacks ) )
-	{
-		maps\_challenges_coop::doMissionCallback( "playerRevived", reviver ); 
-	}	
-	
-	setClientSysState("lsm", "0", self);	// Notify client last stand ended.
-	
-	self.revivetrigger delete();
-	self.revivetrigger = undefined;
-
-	self laststand_giveback_player_weapons();
-	
-	self.ignoreme = false;
-	
-	self thread say_revived_vo();
-	
-}

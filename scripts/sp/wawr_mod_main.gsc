@@ -1,7 +1,7 @@
 #include maps\_utility;
 #include common_scripts\utility;
 
-#define XP_PER_NORMAL_KILL 1
+#define XP_PER_NORMAL_KILL 2
 #define XP_PER_HEAD_SHOT_KILL 2
 #define XP_FOR_ROUND_COMPLETION_BASE 10
 #define XP_FOR_ROUND_COMPLETION_CAP 300
@@ -19,12 +19,13 @@ main()
 		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	}
-	replaceFunc( maps\_laststand::revive_success_override, scripts\sp\wawr_common_functions::revive_success_override );
+	replaceFunc( maps\_laststand::revive_success, ::revive_success_override );
 	level._custom_func_table = [];
 	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
 	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
 	level._custom_func_table[ "enemy_is_dog" ] = getFunction( "maps/_zombiemode_utility", "enemy_is_dog" );
 	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
+	level._custom_func_table[ "say_revived_vo" ] = getFunction( "maps/_laststand", "say_revived_vo" );
 	level._end_of_round_funcs = [];
 	level._end_of_round_funcs[ 0 ] = ::award_round_completion_xp;
 	setDvar( "scr_xpscale", 1 );
@@ -330,6 +331,7 @@ award_round_completion_xp()
 	{
 		player = players[ i ];
 		player giveRankXP( "round_completion", xp_value );
+		player iPrintlnBold( "+" + xp_value );
 	}
 }
 
@@ -436,16 +438,42 @@ award_xp_for_purchased_trigger()
 					players[ i ] giveRankXP( "purchase", 50 );
 					players[ i ] iPrintlnBold( "+" + 50 );
 				}
-				self delete();
 				break;
 			}
 		 	else if( isDefined( self.zombie_cost ) && who.score >= self.zombie_cost )
 			{
 				who giveRankXP( "purchase", 25 );
 				who iPrintlnBold( "+" + 25 );
-				self delete();
 				break;
 			}
 		}
+	}
+}
+
+revive_success_override( reviver )
+{
+	self notify ( "player_revived" );	
+	self reviveplayer();
+	
+	//CODER_MOD: TOMMYK 06/26/2008 - For coop scoreboards
+	reviver.revives++;
+	//stat tracking
+	reviver.stats["revives"] = reviver.revives;
+	reviver giveRankXP( "purchase", 10 );
+	reviver iPrintlnBold( "+" + 10 );
+	// CODER MOD: TOMMY K - 07/30/08
+	reviver thread maps\_arcademode::arcadeMode_player_revive();
+	setClientSysState("lsm", "0", self);	// Notify client last stand ended.
+	
+	self.revivetrigger delete();
+	self.revivetrigger = undefined;
+
+	self maps\_laststand::laststand_giveback_player_weapons();
+	
+	self.ignoreme = false;
+	
+	if ( isDefined( level._custom_func_table[ "say_revived_vo" ] ) )
+	{
+		self thread [[ level._custom_func_table[ "say_revived_vo" ] ]]();
 	}
 }
