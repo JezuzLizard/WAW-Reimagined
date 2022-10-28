@@ -16,31 +16,21 @@ main()
 	replaceFunc( maps\_zombiemode_powerups::nuke_powerup, scripts\sp\wawr_common_functions::nuke_powerup_override );
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
 	replaceFunc( maps\_zombiemode_powerups::include_zombie_powerup, ::include_zombie_powerup_override );
-	replaceFunc( maps\_challenges_coop::ch_kills, ::ch_kills_override );
 	if ( level.script != "mazi_zombie_prototype" && level.script != "nazi_zombie_asylum" )
 	{
 		replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
 		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	}
-	replaceFunc( maps\_laststand::revive_success, ::revive_success_override );
-	level._custom_func_table = [];
+	if ( !isDefined( level._custom_funcs_table ) )
+	{
+		level._custom_funcs_table = [];
+	}
 	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
 	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
 	level._custom_func_table[ "enemy_is_dog" ] = getFunction( "maps/_zombiemode_utility", "enemy_is_dog" );
 	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
-	level._custom_func_table[ "say_revived_vo" ] = getFunction( "maps/_laststand", "say_revived_vo" );
 	level._end_of_round_funcs = [];
-	level._end_of_round_funcs[ 0 ] = ::award_round_completion_xp;
-	setDvar( "scr_xpscale", 1 );
-	level._xp_events = [];
-	level._xp_events[ "kill" ] = 5;
-	level._xp_events[ "round_base" ] = 10;
-	level._xp_events[ "round_cap" ] = 300;
-	level._xp_events[ "revive" ] = 15;
-	level._xp_events[ "door" ] = 25;
-	level._xp_events[ "power" ] = 50;
-	precachestring( &"SCRIPT_PLUS" );
 }
 
 init()
@@ -58,34 +48,8 @@ init()
 	level thread insta_kill_rounds_tracker();
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
-	level thread on_player_connect();
-	level thread add_trigger_callbacks();
 
 	level.zombie_vars["zombie_spawn_delay"] = 1;
-}
-
-add_trigger_callbacks()
-{
-	wait 1;
-	use_triggers = getEntArray( "trigger_use", "classname" );
-	for ( i = 0; i < use_triggers.size; i++ )
-	{
-		// This should never happen but if it does and this check isn't here...
-		if ( !isDefined( use_triggers[ i ].targetname ) )
-		{
-			continue;
-		}
-		switch ( use_triggers[ i ].targetname )
-		{
-			case "zombie_debris":
-			case "zombie_door":
-			case "use_power_switch":
-			case "use_master_switch":
-				use_triggers[ i ] thread award_xp_for_purchased_trigger();
-			default:
-				break;
-		}
-	}
 }
 
 on_player_connect()
@@ -94,36 +58,7 @@ on_player_connect()
 	while ( true )
 	{
 		level waittill( "connected", player );
-		player.rankUpdateTotal = 0;
-		player thread onPlayerSpawned();
 		player setClientDvar( "aim_lockon_enabled", 1 );
-	}
-}
-
-onPlayerSpawned()
-{
-	self endon("disconnect");
-
-	for(;;)
-	{
-		self waittill("spawned_player");
-
-		if(!isdefined(self.hud_rankscroreupdate))
-		{
-			self.hud_rankscroreupdate = NewScoreHudElem(self);
-			self.hud_rankscroreupdate.horzAlign = "center";
-			self.hud_rankscroreupdate.vertAlign = "middle";
-			self.hud_rankscroreupdate.alignX = "center";
-			self.hud_rankscroreupdate.alignY = "middle";
-	 		self.hud_rankscroreupdate.x = 0;
-			self.hud_rankscroreupdate.y = -60;
-			self.hud_rankscroreupdate.font = "default";
-			self.hud_rankscroreupdate.fontscale = 2.0;
-			self.hud_rankscroreupdate.archived = false;
-			self.hud_rankscroreupdate.color = (0.5,0.5,0.5);
-			self.hud_rankscroreupdate.alpha = 0;
-			self.hud_rankscroreupdate fontPulseInit();
-		}
 	}
 }
 
@@ -364,69 +299,6 @@ calculate_normal_health()
 	return health;
 }
 
-award_round_completion_xp()
-{
-	xp_value = int( ( level._xp_events[ "round_base" ] * level.round_number ) ); 
-	if ( xp_value > level._xp_events[ "round_cap" ] )
-	{
-		xp_value = level._xp_events[ "round_cap" ];
-	}
-	players = get_players();
-	for ( i = 0; i < players.size; i++ )
-	{
-		player = players[ i ];
-		if ( !maps\_zombiemode_utility::is_player_valid( player ) )
-		{
-			continue;
-		}
-		player giveRankXP( "round_completion", xp_value );
-	}
-}
-
-mayProcessChallenges_override()
-{
-	return 1;
-}
-
-giveRankXP( type, value, levelEnd )
-{
-	self endon("disconnect");
-	if(	!isDefined( levelEnd ) )
-	{
-		levelEnd = false;
-	}	
-	
-	value = int( value * level.xpScale );
-
-	switch( type )
-	{
-		case "challenge":
-			self.summary_challenge += value;
-			self.summary_xp += value;
-			break;
-		default:
-			self.summary_xp += value;
-			break;
-	}
-		
-	self maps\_challenges_coop::incRankXP( value );
-
-	if ( level.rankedMatch && maps\_challenges_coop::updateRank() && false == levelEnd )
-		self thread maps\_challenges_coop::updateRankAnnounceHUD();
-	self updateRankScoreHUD_MP( value );
-	// Set the XP stat after any unlocks, so that if the final stat set gets lost the unlocks won't be gone for good.
-	self maps\_challenges_coop::syncXPStat();
-}
-
-ch_kills_override( victim )
-{
-	if ( !isDefined( victim.attacker ) || !isPlayer( victim.attacker ) || victim.team == "allies" )
-	{
-		return;
-	}
-	player = victim.attacker;
-	player giveRankXP( "kill", level._xp_events[ "kill" ] );
-}
 /*
 purchase_xp_on_hud()
 {
@@ -451,143 +323,3 @@ purchase_xp_on_hud()
 	hud_msg Destroy();
 }
 */
-
-award_xp_for_purchased_trigger()
-{
-	level endon( "end_game" );
-	level endon( "intermission" );
-
-	while ( true )
-	{
-		self waittill( "trigger", who ); 
-
-		if( !who UseButtonPressed() )
-		{
-			continue;
-		}
-
-		if( who maps\_zombiemode_utility::in_revive_trigger() )
-		{
-			continue;
-		}
-
-		if( maps\_zombiemode_utility::is_player_valid( who ) )
-		{
-			if ( self.targetname == "use_master_switch" || self.targetname == "use_power_switch" )
-			{
-				players = get_players();
-				for ( i = 0; i < players.size; i++ )
-				{
-					if ( !maps\_zombiemode_utility::is_player_valid( players[ i ] ) )
-					{
-						continue;
-					}
-					players[ i ] giveRankXP( "power", level._xp_events[ "power" ] );
-				}
-				break;
-			}
-		 	else if( isDefined( self.zombie_cost ) && who.score >= self.zombie_cost )
-			{
-				who giveRankXP( "purchase", level._xp_events[ "door" ] );
-				break;
-			}
-		}
-	}
-}
-
-revive_success_override( reviver )
-{
-	self notify ( "player_revived" );	
-	self reviveplayer();
-	
-	//CODER_MOD: TOMMYK 06/26/2008 - For coop scoreboards
-	reviver.revives++;
-	//stat tracking
-	reviver.stats["revives"] = reviver.revives;
-	reviver giveRankXP( "purchase", level._xp_events[ "revive" ] );
-	// CODER MOD: TOMMY K - 07/30/08
-	reviver thread maps\_arcademode::arcadeMode_player_revive();
-	setClientSysState("lsm", "0", self);	// Notify client last stand ended.
-	
-	self.revivetrigger delete();
-	self.revivetrigger = undefined;
-
-	self maps\_laststand::laststand_giveback_player_weapons();
-	
-	self.ignoreme = false;
-	
-	if ( isDefined( level._custom_func_table[ "say_revived_vo" ] ) )
-	{
-		self thread [[ level._custom_func_table[ "say_revived_vo" ] ]]();
-	}
-}
-
-fontPulseInit()
-{
-	self.baseFontScale = self.fontScale;
-	self.maxFontScale = self.fontScale * 2;
-	self.inFrames = 3;
-	self.outFrames = 5;
-}
-
-fontPulse(player)
-{
-	self notify ( "fontPulse" );
-	self endon ( "fontPulse" );
-	player endon("disconnect");
-	
-	scaleRange = self.maxFontScale - self.baseFontScale;
-	
-	while ( self.fontScale < self.maxFontScale )
-	{
-		self.fontScale = min( self.maxFontScale, self.fontScale + (scaleRange / self.inFrames) );
-		wait 0.05;
-	}
-		
-	while ( self.fontScale > self.baseFontScale )
-	{
-		self.fontScale = max( self.baseFontScale, self.fontScale - (scaleRange / self.outFrames) );
-		wait 0.05;
-	}
-}
-
-updateRankScoreHUD_MP( amount )
-{
-	self endon( "disconnect" );
-
-	if ( amount == 0 )
-		return;
-
-	self notify( "update_score" );
-	self endon( "update_score" );
-
-	self.rankUpdateTotal += amount;
-
-	wait ( 0.05 );
-
-	if( isDefined( self.hud_rankscroreupdate ) )
-	{			
-		if ( self.rankUpdateTotal < 0 )
-		{
-			self.hud_rankscroreupdate.label = &"";
-			self.hud_rankscroreupdate.color = (1,0,0);
-		}
-		else
-		{
-			self.hud_rankscroreupdate.label = &"SCRIPT_PLUS";
-			self.hud_rankscroreupdate.color = (1,1,0.5);
-		}
-
-		self.hud_rankscroreupdate setValue(self.rankUpdateTotal);
-
-		self.hud_rankscroreupdate.alpha = 0.85;
-		self.hud_rankscroreupdate thread fontPulse( self );
-
-		wait 1;
-		self.hud_rankscroreupdate fadeOverTime( 0.75 );
-		self.hud_rankscroreupdate.alpha = 0;
-		
-		self.rankUpdateTotal = 0;
-	}
-}
-
