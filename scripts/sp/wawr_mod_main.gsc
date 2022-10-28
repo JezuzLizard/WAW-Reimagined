@@ -18,6 +18,24 @@ main()
 		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	}
+	door_think_func = getFunction( "maps/_zombiemode_blockers_new", "door_think" );
+	if ( isDefined( door_think_func ) )
+	{
+		replaceFunc( door_think_func, scripts\sp\wawr_common_functions::door_think_factory_override );
+	}
+	else 
+	{
+		replaceFunc( maps\_zombiemode_blockers::door_think, scripts\sp\wawr_common_functions::door_think_pre_factory_override );
+	}
+	debris_think_func = getFunction( "maps/_zombiemode_blockers_new", "debris_think" );
+	if ( isDefined( debris_think_func ) )
+	{
+		replaceFunc( debris_think_func, scripts\sp\wawr_common_functions::debris_think_factory_override );
+	}
+	else 
+	{
+		replaceFunc( maps\_zombiemode_blockers::door_think, scripts\sp\wawr_common_functions::debris_think_pre_factory_override );
+	}
 	level._custom_func_table = [];
 	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
 	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
