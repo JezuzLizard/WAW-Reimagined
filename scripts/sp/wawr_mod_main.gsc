@@ -1,11 +1,15 @@
 #include maps\_utility;
 #include common_scripts\utility;
 
+/*
 #define XP_PER_NORMAL_KILL 2
 #define XP_PER_HEAD_SHOT_KILL 2
 #define XP_FOR_ROUND_COMPLETION_BASE 10
 #define XP_FOR_ROUND_COMPLETION_CAP 300
-
+#define XP_FOR_REVIVE 10
+#define XP_FOR_DOOR_BUY 25
+#define XP_FOR_POWER_ACTIVATE 50
+*/
 main()
 {
 	level.script = Tolower( GetDvar( "mapname" ) );
@@ -29,6 +33,14 @@ main()
 	level._end_of_round_funcs = [];
 	level._end_of_round_funcs[ 0 ] = ::award_round_completion_xp;
 	setDvar( "scr_xpscale", 1 );
+	level._xp_events = [];
+	level._xp_events[ "kill" ] = 5;
+	level._xp_events[ "round_base" ] = 10;
+	level._xp_events[ "round_cap" ] = 300;
+	level._xp_events[ "revive" ] = 15;
+	level._xp_events[ "door" ] = 25;
+	level._xp_events[ "power" ] = 50;
+	precachestring( &"SCRIPT_PLUS" );
 }
 
 init()
@@ -39,6 +51,7 @@ init()
 	SetDvar( "g_disable_zombie_grab", 1 );
 	SetDvar( "perk_weaprateEnhanced", 1 );
 	setDvar( "scr_damagefeedback", 1 );
+	setDvar( "g_friendlyFireDist", 0 );
 	level thread enemy_counter_hud();
 	level thread calculate_sph();
 	level thread sph_hud();
@@ -79,9 +92,39 @@ on_player_connect()
 	while ( true )
 	{
 		level waittill( "connected", player );
+		player.rankUpdateTotal = 0;
+		player thread onPlayerSpawned();
 		player setClientDvar( "aim_lockon_enabled", 1 );
 	}
 }
+
+onPlayerSpawned()
+{
+	self endon("disconnect");
+
+	for(;;)
+	{
+		self waittill("spawned_player");
+
+		if(!isdefined(self.hud_rankscroreupdate))
+		{
+			self.hud_rankscroreupdate = NewScoreHudElem(self);
+			self.hud_rankscroreupdate.horzAlign = "center";
+			self.hud_rankscroreupdate.vertAlign = "middle";
+			self.hud_rankscroreupdate.alignX = "center";
+			self.hud_rankscroreupdate.alignY = "middle";
+	 		self.hud_rankscroreupdate.x = 0;
+			self.hud_rankscroreupdate.y = -60;
+			self.hud_rankscroreupdate.font = "default";
+			self.hud_rankscroreupdate.fontscale = 2.0;
+			self.hud_rankscroreupdate.archived = false;
+			self.hud_rankscroreupdate.color = (0.5,0.5,0.5);
+			self.hud_rankscroreupdate.alpha = 0;
+			self.hud_rankscroreupdate fontPulseInit();
+		}
+	}
+}
+
 
 include_zombie_powerup_override( powerup )
 {
@@ -321,17 +364,20 @@ calculate_normal_health()
 
 award_round_completion_xp()
 {
-	xp_value = int( ( XP_FOR_ROUND_COMPLETION_BASE * level.round_number ) ); 
-	if ( xp_value > XP_FOR_ROUND_COMPLETION_CAP )
+	xp_value = int( ( level._xp_events[ "round_base" ] * level.round_number ) ); 
+	if ( xp_value > level._xp_events[ "round_cap" ] )
 	{
-		xp_value = XP_FOR_ROUND_COMPLETION_CAP;
+		xp_value = level._xp_events[ "round_cap" ];
 	}
 	players = get_players();
 	for ( i = 0; i < players.size; i++ )
 	{
 		player = players[ i ];
+		if ( !maps\_zombiemode_utility::is_player_valid( player ) )
+		{
+			continue;
+		}
 		player giveRankXP( "round_completion", xp_value );
-		player iPrintlnBold( "+" + xp_value );
 	}
 }
 
@@ -365,7 +411,7 @@ giveRankXP( type, value, levelEnd )
 
 	if ( level.rankedMatch && maps\_challenges_coop::updateRank() && false == levelEnd )
 		self thread maps\_challenges_coop::updateRankAnnounceHUD();
-
+	self updateRankScoreHUD_MP( value );
 	// Set the XP stat after any unlocks, so that if the final stat set gets lost the unlocks won't be gone for good.
 	self maps\_challenges_coop::syncXPStat();
 }
@@ -373,16 +419,11 @@ giveRankXP( type, value, levelEnd )
 ch_kills_override( victim )
 {
 	if ( !isDefined( victim.attacker ) || !isPlayer( victim.attacker ) || victim.team == "allies" )
-		return;
-	
-	player = victim.attacker;
-
-	xp_value = XP_PER_NORMAL_KILL;
-	if ( victim.damagemod == "MOD_HEAD_SHOT" )
 	{
-		xp_value = XP_PER_HEAD_SHOT_KILL;
+		return;
 	}
-	player giveRankXP( "kill", xp_value );
+	player = victim.attacker;
+	player giveRankXP( "kill", level._xp_events[ "kill" ] );
 }
 /*
 purchase_xp_on_hud()
@@ -435,15 +476,17 @@ award_xp_for_purchased_trigger()
 				players = get_players();
 				for ( i = 0; i < players.size; i++ )
 				{
-					players[ i ] giveRankXP( "purchase", 50 );
-					players[ i ] iPrintlnBold( "+" + 50 );
+					if ( !maps\_zombiemode_utility::is_player_valid( players[ i ] ) )
+					{
+						continue;
+					}
+					players[ i ] giveRankXP( "power", level._xp_events[ "power" ] );
 				}
 				break;
 			}
 		 	else if( isDefined( self.zombie_cost ) && who.score >= self.zombie_cost )
 			{
-				who giveRankXP( "purchase", 25 );
-				who iPrintlnBold( "+" + 25 );
+				who giveRankXP( "purchase", level._xp_events[ "door" ] );
 				break;
 			}
 		}
@@ -459,8 +502,7 @@ revive_success_override( reviver )
 	reviver.revives++;
 	//stat tracking
 	reviver.stats["revives"] = reviver.revives;
-	reviver giveRankXP( "purchase", 10 );
-	reviver iPrintlnBold( "+" + 10 );
+	reviver giveRankXP( "purchase", level._xp_events[ "revive" ] );
 	// CODER MOD: TOMMY K - 07/30/08
 	reviver thread maps\_arcademode::arcadeMode_player_revive();
 	setClientSysState("lsm", "0", self);	// Notify client last stand ended.
@@ -477,3 +519,73 @@ revive_success_override( reviver )
 		self thread [[ level._custom_func_table[ "say_revived_vo" ] ]]();
 	}
 }
+
+fontPulseInit()
+{
+	self.baseFontScale = self.fontScale;
+	self.maxFontScale = self.fontScale * 2;
+	self.inFrames = 3;
+	self.outFrames = 5;
+}
+
+fontPulse(player)
+{
+	self notify ( "fontPulse" );
+	self endon ( "fontPulse" );
+	player endon("disconnect");
+	
+	scaleRange = self.maxFontScale - self.baseFontScale;
+	
+	while ( self.fontScale < self.maxFontScale )
+	{
+		self.fontScale = min( self.maxFontScale, self.fontScale + (scaleRange / self.inFrames) );
+		wait 0.05;
+	}
+		
+	while ( self.fontScale > self.baseFontScale )
+	{
+		self.fontScale = max( self.baseFontScale, self.fontScale - (scaleRange / self.outFrames) );
+		wait 0.05;
+	}
+}
+
+updateRankScoreHUD_MP( amount )
+{
+	self endon( "disconnect" );
+
+	if ( amount == 0 )
+		return;
+
+	self notify( "update_score" );
+	self endon( "update_score" );
+
+	self.rankUpdateTotal += amount;
+
+	wait ( 0.05 );
+
+	if( isDefined( self.hud_rankscroreupdate ) )
+	{			
+		if ( self.rankUpdateTotal < 0 )
+		{
+			self.hud_rankscroreupdate.label = &"";
+			self.hud_rankscroreupdate.color = (1,0,0);
+		}
+		else
+		{
+			self.hud_rankscroreupdate.label = &"SCRIPT_PLUS";
+			self.hud_rankscroreupdate.color = (1,1,0.5);
+		}
+
+		self.hud_rankscroreupdate setValue(self.rankUpdateTotal);
+
+		self.hud_rankscroreupdate.alpha = 0.85;
+		self.hud_rankscroreupdate thread fontPulse( self );
+
+		wait 1;
+		self.hud_rankscroreupdate fadeOverTime( 0.75 );
+		self.hud_rankscroreupdate.alpha = 0;
+		
+		self.rankUpdateTotal = 0;
+	}
+}
+
