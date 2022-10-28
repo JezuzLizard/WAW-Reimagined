@@ -2,8 +2,9 @@
 #include common_scripts\utility;
 
 #define XP_PER_NORMAL_KILL 1
-#define XP_PER_HEAD_SHOT 2
-#define XP_FOR_ROUND_COMPLETION_BASE 4
+#define XP_PER_HEAD_SHOT_KILL 2
+#define XP_FOR_ROUND_COMPLETION_BASE 10
+#define XP_FOR_ROUND_COMPLETION_CAP 300
 
 main()
 {
@@ -18,24 +19,7 @@ main()
 		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	}
-	door_think_func = getFunction( "maps/_zombiemode_blockers_new", "door_think" );
-	if ( isDefined( door_think_func ) )
-	{
-		replaceFunc( door_think_func, scripts\sp\wawr_common_functions::door_think_factory_override );
-	}
-	else 
-	{
-		replaceFunc( maps\_zombiemode_blockers::door_think, scripts\sp\wawr_common_functions::door_think_pre_factory_override );
-	}
-	debris_think_func = getFunction( "maps/_zombiemode_blockers_new", "debris_think" );
-	if ( isDefined( debris_think_func ) )
-	{
-		replaceFunc( debris_think_func, scripts\sp\wawr_common_functions::debris_think_factory_override );
-	}
-	else 
-	{
-		replaceFunc( maps\_zombiemode_blockers::door_think, scripts\sp\wawr_common_functions::debris_think_pre_factory_override );
-	}
+	replaceFunc( maps\_laststand::revive_success_override, scripts\sp\wawr_common_functions::revive_success_override );
 	level._custom_func_table = [];
 	level._custom_func_table[ "special_dog_spawn" ] = getFunction( "maps/_zombiemode_dogs", "special_dog_spawn" );
 	level._custom_func_table[ "is_magic_bullet_shield_enabled" ] = getFunction( "maps/_zombiemode_utility", "is_magic_bullet_shield_enabled" );
@@ -61,6 +45,31 @@ init()
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
 	level thread on_player_connect();
+	level thread add_trigger_callbacks();
+}
+
+add_trigger_callbacks()
+{
+	wait 1;
+	use_triggers = getEntArray( "trigger_use", "classname" );
+	for ( i = 0; i < use_triggers.size; i++ )
+	{
+		// This should never happen but if it does and this check isn't here...
+		if ( !isDefined( use_triggers[ i ].targetname ) )
+		{
+			continue;
+		}
+		switch ( use_triggers[ i ].targetname )
+		{
+			case "zombie_debris":
+			case "zombie_door":
+			case "use_power_switch":
+			case "use_master_switch":
+				use_triggers[ i ] thread award_xp_for_purchased_trigger();
+			default:
+				break;
+		}
+	}
 }
 
 on_player_connect()
@@ -311,8 +320,11 @@ calculate_normal_health()
 
 award_round_completion_xp()
 {
-	printConsole( "award_round_completion_xp()" );
-	xp_value = int( ( XP_FOR_ROUND_COMPLETION_BASE * level.round_number ) / 2 ); 
+	xp_value = int( ( XP_FOR_ROUND_COMPLETION_BASE * level.round_number ) ); 
+	if ( xp_value > XP_FOR_ROUND_COMPLETION_CAP )
+	{
+		xp_value = XP_FOR_ROUND_COMPLETION_CAP;
+	}
 	players = get_players();
 	for ( i = 0; i < players.size; i++ )
 	{
@@ -329,7 +341,6 @@ mayProcessChallenges_override()
 giveRankXP( type, value, levelEnd )
 {
 	self endon("disconnect");
-	printConsole( "giveRankXP() type: " + type + " value: " + value );
 	if(	!isDefined( levelEnd ) )
 	{
 		levelEnd = false;
@@ -367,7 +378,74 @@ ch_kills_override( victim )
 	xp_value = XP_PER_NORMAL_KILL;
 	if ( victim.damagemod == "MOD_HEAD_SHOT" )
 	{
-		xp_value = XP_PER_HEAD_SHOT;
+		xp_value = XP_PER_HEAD_SHOT_KILL;
 	}
 	player giveRankXP( "kill", xp_value );
+}
+/*
+purchase_xp_on_hud()
+{
+	hud = set_hudelem( "Save Successful", 320, 100, 1.5 );
+	hud.alignX = "center";
+	hud.color = ( 0, 1, 0 );
+
+	hud_msg = set_hudelem( msg, 320, 120, 1.3 );
+	hud_msg.alignX = "center";
+	hud_msg.color = ( 1, 1, 1 );
+
+	wait( 2 );
+
+	hud FadeOverTime( 3 );
+	hud.alpha = 0;
+
+	hud_msg FadeOverTime( 3 );
+	hud_msg.alpha = 0;
+
+	wait( 3 );
+	hud Destroy();
+	hud_msg Destroy();
+}
+*/
+
+award_xp_for_purchased_trigger()
+{
+	level endon( "end_game" );
+	level endon( "intermission" );
+
+	while ( true )
+	{
+		self waittill( "trigger", who ); 
+
+		if( !who UseButtonPressed() )
+		{
+			continue;
+		}
+
+		if( who maps\_zombiemode_utility::in_revive_trigger() )
+		{
+			continue;
+		}
+
+		if( maps\_zombiemode_utility::is_player_valid( who ) )
+		{
+			if ( self.targetname == "use_master_switch" || self.targetname == "use_power_switch" )
+			{
+				players = get_players();
+				for ( i = 0; i < players.size; i++ )
+				{
+					players[ i ] giveRankXP( "purchase", 50 );
+					players[ i ] iPrintlnBold( "+" + 50 );
+				}
+				self delete();
+				break;
+			}
+		 	else if( isDefined( self.zombie_cost ) && who.score >= self.zombie_cost )
+			{
+				who giveRankXP( "purchase", 25 );
+				who iPrintlnBold( "+" + 25 );
+				self delete();
+				break;
+			}
+		}
+	}
 }
