@@ -21,7 +21,6 @@ give_player_score( points )
 
 round_wait_override()
 {
-	printConsole( "round_wait_override()" );
 	level notify( "start_of_round" );
 	func = getFunction( "maps/_zombiemode", "round_wait" );
 	disableDetourOnce( func );
@@ -72,49 +71,11 @@ round_spawning_override()
 		players[i].zombification_time = 0;
 	}
 
-	max = level.zombie_vars["zombie_max_ai"];
-
-	multiplier = level.round_number / 5;
-	if( multiplier < 1 )
-	{
-		multiplier = 1;
-	}
-
-	// After round 10, exponentially have more AI attack the player
-	if( level.round_number >= 10 )
-	{
-		multiplier *= level.round_number * 0.15;
-	}
-
 	player_num = get_players().size;
 
-	if( player_num == 1 )
-	{
-		max += int( ( 0.5 * level.zombie_vars["zombie_ai_per_player"] ) * multiplier ); 
-	}
-	else
-	{
-		max += int( ( ( player_num - 1 ) * level.zombie_vars["zombie_ai_per_player"] ) * multiplier ); 
-	}
+	max = ( player_num * 24 ); 
 
-
-	
-	if(level.round_number < 3 && level.script == "nazi_zombie_asylum")
-	{
-		if(get_players().size > 1)
-		{
-			
-			max = get_players().size * 3 + level.round_number;
-
-		}
-		else
-		{
-
-			max = 6;	
-
-		}
-	}
-	else if ( level.first_round )
+	if ( level.first_round )
 	{
 		max = int( max * 0.2 );	
 	}
@@ -214,6 +175,8 @@ round_spawning_override()
 						}
 					}
 				}
+				wait( level.zombie_vars["zombie_spawn_delay"] ); 
+				wait_network_frame();
 				continue;
 			}
 		}
