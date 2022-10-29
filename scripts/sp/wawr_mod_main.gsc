@@ -28,6 +28,7 @@ main()
 	{
 		replaceFunc( dog_spawn_wait_func, scripts\sp\wawr_common_functions::waiting_for_next_dog_spawn_override );
 	}
+	replaceFunc( common_scripts\utility::struct_class_init, scripts\sp\wawr_utility::struct_class_init_override );
 	if ( !isDefined( level._custom_funcs_table ) )
 	{
 		level._custom_funcs_table = [];
