@@ -23,6 +23,11 @@ main()
 		replaceFunc( maps\_zombiemode::round_spawning, scripts\sp\wawr_common_functions::round_spawning_override );
 		replaceFunc( maps\_zombiemode::spectators_respawn, scripts\sp\wawr_common_functions::spectators_respawn_override );
 	}
+	dog_spawn_wait_func = getFunction( "maps/_zombiemode_dogs", "waiting_for_next_dog_spawn" );
+	if ( isDefined( dog_spawn_wait_func ) )
+	{
+		replaceFunc( dog_spawn_wait_func, scripts\sp\wawr_common_functions::waiting_for_next_dog_spawn_override );
+	}
 	if ( !isDefined( level._custom_funcs_table ) )
 	{
 		level._custom_funcs_table = [];
@@ -32,10 +37,12 @@ main()
 	level._custom_func_table[ "enemy_is_dog" ] = getFunction( "maps/_zombiemode_utility", "enemy_is_dog" );
 	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
 	level._end_of_round_funcs = [];
+	level thread on_player_connect();
 }
 
 init()
 {
+	precacheShader( "damage_feedback" );
 	level.zombie_counter_zombies = 0;
 	SetDvar( "player_lastStandBleedoutTime", 45 );
 	SetDvar( "g_fix_tesla_bug", 1 );
@@ -50,7 +57,7 @@ init()
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
 
-	level.zombie_vars["zombie_spawn_delay"] = 1;
+	level.zombie_vars["zombie_spawn_delay"] = 1.5;
 }
 
 on_player_connect()
@@ -59,6 +66,7 @@ on_player_connect()
 	while ( true )
 	{
 		level waittill( "connected", player );
+		player init_damage_feedback_hud();
 		player setClientDvar( "aim_lockon_enabled", 1 );
 	}
 }
@@ -107,6 +115,7 @@ spawn_zombie_override( spawner, target_name )
 			guy.targetname = target_name; 
 		} 
 		guy thread zombie_death();
+		guy thread monitor_damage_for_damage_feedback();
 		return guy;  
 	}
 
@@ -324,3 +333,72 @@ purchase_xp_on_hud()
 	hud_msg Destroy();
 }
 */
+
+init_damage_feedback_hud()
+{
+	if ( !getDvarInt( "scr_damagefeedback" ) )
+		return;
+
+	self.hud_damagefeedback = newClientHudElem( self );
+	self.hud_damagefeedback.alignX = "center";
+	self.hud_damagefeedback.alignY = "middle";
+	self.hud_damagefeedback.horzAlign = "center";
+	self.hud_damagefeedback.vertAlign = "middle";
+	self.hud_damagefeedback.alpha = 0;
+	self.hud_damagefeedback.archived = true;
+	self.hud_damagefeedback.color = ( 1, 1, 1 );
+	self.hud_damagefeedback setShader( "damage_feedback", 24, 24 );
+
+	self.hud_damagefeedback_kill = newClientHudElem( self );
+	self.hud_damagefeedback_kill.alignX = "center";
+	self.hud_damagefeedback_kill.alignY = "middle";
+	self.hud_damagefeedback_kill.horzAlign = "center";
+	self.hud_damagefeedback_kill.vertAlign = "middle";
+	self.hud_damagefeedback_kill.alpha = 0;
+	self.hud_damagefeedback_kill.archived = true;
+	self.hud_damagefeedback_kill.color = ( 1, 0, 0 );
+	self.hud_damagefeedback_kill setShader( "damage_feedback", 24, 24 );
+}
+
+updateDamageFeedback()
+{
+	//self playlocalsound( "SP_hit_alert" );
+	
+	self.hud_damagefeedback.alpha = 1;
+	self.hud_damagefeedback fadeOverTime( 1 );
+	self.hud_damagefeedback.alpha = 0;
+}
+
+updateDamageFeedback_kill()
+{
+	//self playlocalsound( "SP_hit_alert" );
+	
+	self.hud_damagefeedback_kill.alpha = 1;
+	self.hud_damagefeedback_kill fadeOverTime( 1 );
+	self.hud_damagefeedback_kill.alpha = 0;
+}
+
+monitor_damage_for_damage_feedback()
+{
+	if ( !getDvarInt( "scr_damagefeedback" ) )
+		return;
+
+	for ( ;; )
+	{
+		self waittill( "damage", amount, attacker );
+		
+		if ( !isPlayer( attacker ) )
+		{
+			continue;
+		}
+		if ( self.health < 1 )
+		{
+			attacker updateDamageFeedback_kill();
+			return;
+		}
+		else 
+		{
+			attacker updateDamageFeedback();
+		}
+	}
+}

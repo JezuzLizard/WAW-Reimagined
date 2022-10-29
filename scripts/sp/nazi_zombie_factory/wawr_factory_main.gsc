@@ -10,6 +10,7 @@ main()
 	replaceFunc( maps\nazi_zombie_factory::include_weapons, ::include_weapons_override );
 	replaceFunc( maps\nazi_zombie_factory_teleporter::teleport_pad_active_think, ::teleport_pad_active_think_override );
 	replaceFunc( maps\_zombiemode_powerups::special_drop_setup, ::special_drop_setup_override );
+	replaceFunc( maps\_zombiemode_dogs::special_dog_spawn, ::special_dog_spawn_override );
 	level thread reset_teleporter_cost();
 }
 
@@ -481,4 +482,82 @@ special_drop_setup_override()
 		self thread maps\_zombiemode_powerups::powerup_wobble();
 		self thread maps\_zombiemode_powerups::powerup_grab();
 	}
+}
+
+special_dog_spawn_override( spawners, num_to_spawn )
+{
+	if ( !IsDefined(num_to_spawn) )
+	{
+		num_to_spawn = 1;
+	}
+
+	if ( maps\_zombiemode_utility::get_enemy_count() >= 24 )
+	{
+		return false;
+	}
+
+	spawn_point = undefined;
+	count = 0;
+	spawn_attempts = 0;
+	while ( count < num_to_spawn )
+	{
+		//update the player array.
+		players = get_players();
+		favorite_enemy = maps\_zombiemode_dogs::get_favorite_enemy();
+
+		if ( IsDefined( spawners ) )
+		{
+			spawn_point = spawners[ RandomInt(spawners.size) ];
+			ai = maps\_zombiemode_utility::spawn_zombie( spawn_point );
+
+			if( IsDefined( ai ) ) 	
+			{
+				ai.favoriteenemy = favorite_enemy;
+				spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
+				level.zombie_total--;
+				count++;
+				flag_set( "dog_clips" );
+			}
+		}
+		else
+		{
+			if ( IsDefined( level.dog_spawn_func ) )
+			{
+				spawn_loc = [[level.dog_spawn_func]]( level.enemy_dog_spawns, favorite_enemy );
+
+				ai = maps\_zombiemode_utility::spawn_zombie( level.enemy_dog_spawns[0] );
+				if( IsDefined( ai ) ) 	
+				{
+					ai.favoriteenemy = favorite_enemy;
+					spawn_loc thread maps\_zombiemode_dogs::dog_spawn_fx( ai, spawn_loc );
+					level.zombie_total--;
+					count++;
+					flag_set( "dog_clips" );
+				}
+			}
+			else
+			{
+				// Old method
+				spawn_point = maps\_zombiemode_dogs::dog_spawn_sumpf_logic( level.enemy_dog_spawns, favorite_enemy );
+				ai = maps\_zombiemode_utility::spawn_zombie( spawn_point );
+
+				if( IsDefined( ai ) ) 	
+				{
+					ai.favoriteenemy = favorite_enemy;
+					spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
+					level.zombie_total--;
+					count++;
+					flag_set( "dog_clips" );
+				}
+			}
+		}
+		spawn_attempts++;
+		maps\_zombiemode_dogs::waiting_for_next_dog_spawn( count, num_to_spawn );
+		if ( spawn_attempts > 3 )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
