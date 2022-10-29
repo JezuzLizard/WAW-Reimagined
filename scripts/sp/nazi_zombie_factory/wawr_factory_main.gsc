@@ -248,6 +248,10 @@ elec_barrier_damage_override( trap_activator )
 				ent.marked_for_death = true;
 				trap_activator.kills++;
 				trap_activator give_player_score( 10 );
+				if ( isDefined( level._custom_func_table[ "giveRankXP" ] ) )
+				{
+					trap_activator [[ level._custom_func_table[ "giveRankXP" ] ]]( "trap_kill", 3 );
+				}
 				ent thread zombie_elec_death_override( randomint(100) );
 			}
 		}

@@ -16,6 +16,7 @@ main()
 	replaceFunc( maps\_zombiemode_powerups::nuke_powerup, scripts\sp\wawr_common_functions::nuke_powerup_override );
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
 	replaceFunc( maps\_zombiemode_powerups::include_zombie_powerup, ::include_zombie_powerup_override );
+	replaceFunc( maps\_zombiemode_powerups::full_ammo_powerup, scripts\sp\wawr_common_functions::full_ammo_powerup_override );
 	if ( level.script != "mazi_zombie_prototype" && level.script != "nazi_zombie_asylum" )
 	{
 		replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );

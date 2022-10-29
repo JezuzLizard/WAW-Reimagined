@@ -71,11 +71,46 @@ round_spawning_override()
 		players[i].zombification_time = 0;
 	}
 
+	level.round_start_time = getTime();
+
+	max = level.zombie_vars["zombie_max_ai"];
+
+	multiplier = level.round_number / 5;
+	if( multiplier < 1 )
+	{
+		multiplier = 1;
+	}
+
+	// After round 10, exponentially have more AI attack the player
+	if( level.round_number >= 10 )
+	{
+		multiplier *= level.round_number * 0.15;
+	}
 	player_num = get_players().size;
+	if( player_num == 1 )
+	{
+		max += int( ( 0.5 * level.zombie_vars["zombie_ai_per_player"] ) * multiplier ); 
+	}
+	else
+	{
+		max += int( ( ( player_num - 1 ) * level.zombie_vars["zombie_ai_per_player"] ) * multiplier ); 
+	}
+	if(level.round_number < 3 && level.script == "nazi_zombie_asylum")
+	{
+		if(player_num > 1)
+		{
+			
+			max = player_num * 3 + level.round_number;
 
-	max = ( player_num * 24 ); 
+		}
+		else
+		{
 
-	if ( level.first_round )
+			max = 6;	
+
+		}
+	}
+	else if ( level.first_round )
 	{
 		max = int( max * 0.2 );	
 	}
@@ -99,7 +134,7 @@ round_spawning_override()
 	// DEBUG HACK:	
 	//max = 1;
 	old_spawn = undefined;
-	while( count < max )
+	while( level.zombie_total > 0 )
 	{
 
 		spawn_point = level.enemy_spawns[RandomInt( level.enemy_spawns.size )]; 
@@ -152,7 +187,7 @@ round_spawning_override()
 					spawn_dog = true;
 				}
 			}
-
+			spawned_dog = false;
 			if ( spawn_dog )
 			{
 				keys = GetArrayKeys( level.zones );
@@ -170,14 +205,20 @@ round_spawning_override()
 								level [[ level._custom_func_table[ "special_dog_spawn" ] ]]( undefined, 1 );
 								level.zombie_total--;
 								count++;
-								wait_network_frame();
+								spawned_dog = true;
+								break;
 							}
 						}
 					}
+					if ( spawned_dog )
+					{
+						break;
+					}
 				}
-				wait( level.zombie_vars["zombie_spawn_delay"] ); 
-				wait_network_frame();
-				continue;
+				if ( spawned_dog )
+				{
+					continue;
+				}
 			}
 		}
 
@@ -223,7 +264,7 @@ nuke_powerup_override( drop_item )
 	
 
 	zombies = get_array_of_closest( drop_item.origin, zombies );
-
+	xp_value = 0;
 	for (i = 0; i < zombies.size; i++)
 	{
 		if( !IsDefined( zombies[i] ) )
@@ -259,14 +300,45 @@ nuke_powerup_override( drop_item )
 		}
 		zombies[i] dodamage( zombies[i].health + 666, zombies[i].origin );
 		playsoundatposition( "nuked", zombies[i].origin );
+		xp_value++;
 	}
-
+	new_zombie_total = level.zombie_total - 24;
+	if ( new_zombie_total < 0 )
+	{
+		new_zombie_total = 0;
+	}
+	level.zombie_total = new_zombie_total;
 	players = get_players();
 	for(i = 0; i < players.size; i++)
 	{
 		players[i] give_player_score( 400 );
+		if ( isDefined( level._custom_func_table[ "giveRankXP" ] ) )
+		{
+			players[ i ] [[ level._custom_func_table[ "giveRankXP" ] ]]( "nuke_kill", xp_value );
+		}
 	}
+}
 
+full_ammo_powerup_override( drop_item )
+{
+	players = get_players();
+
+	for (i = 0; i < players.size; i++)
+	{
+		primaryWeapons = players[i] GetWeaponsListPrimaries(); 
+		for( x = 0; x < primaryWeapons.size; x++ )
+		{
+			clipsize = weaponClipSize( primaryWeapons[ x ] );
+			players[ i ] setWeaponAmmoClip( primaryWeapons[ x ], clipsize );
+		}
+		allweapons = players[ i ] getWeaponsList();
+		for( x = 0; x < allweapons.size; x++ )
+		{
+			players[ i ] GiveMaxAmmo( allweapons[ x ] );
+		}
+	}
+	//	array_thread (players, ::full_ammo_on_hud, drop_item);
+	level thread maps\_zombiemode_powerups::full_ammo_on_hud( drop_item );
 }
 
 spectators_respawn_override()
