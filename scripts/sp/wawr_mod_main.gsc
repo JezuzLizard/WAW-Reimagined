@@ -392,7 +392,7 @@ monitor_damage_for_damage_feedback()
 		{
 			continue;
 		}
-		if ( self.health < 1 )
+		if ( !isDefined( self ) || !isAlive( self ) )
 		{
 			attacker updateDamageFeedback_kill();
 			return;

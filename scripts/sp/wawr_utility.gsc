@@ -79,3 +79,20 @@ register_perk_struct( name, model, origin, angles )
 
 	add_struct( perk_struct );
 }
+
+cast_bool_to_str( bool, binary_string_options )
+{
+	options = strTok( binary_string_options, " " );
+	if ( options.size == 2 )
+	{
+		if ( bool )
+		{
+			return options[ 0 ];
+		}
+		else 
+		{
+			return options[ 1 ];
+		}
+	}
+	return bool + "";
+}

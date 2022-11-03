@@ -501,10 +501,14 @@ special_dog_spawn_override( spawners, num_to_spawn )
 	spawn_attempts = 0;
 	while ( count < num_to_spawn )
 	{
+		if ( spawn_attempts > 3 )
+		{
+			return false;
+		}
 		//update the player array.
-		players = get_players();
+		players = getPlayers();
 		favorite_enemy = maps\_zombiemode_dogs::get_favorite_enemy();
-
+		ai = undefined;
 		if ( IsDefined( spawners ) )
 		{
 			spawn_point = spawners[ RandomInt(spawners.size) ];
@@ -512,11 +516,7 @@ special_dog_spawn_override( spawners, num_to_spawn )
 
 			if( IsDefined( ai ) ) 	
 			{
-				ai.favoriteenemy = favorite_enemy;
 				spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
-				level.zombie_total--;
-				count++;
-				flag_set( "dog_clips" );
 			}
 		}
 		else
@@ -528,11 +528,7 @@ special_dog_spawn_override( spawners, num_to_spawn )
 				ai = maps\_zombiemode_utility::spawn_zombie( level.enemy_dog_spawns[0] );
 				if( IsDefined( ai ) ) 	
 				{
-					ai.favoriteenemy = favorite_enemy;
 					spawn_loc thread maps\_zombiemode_dogs::dog_spawn_fx( ai, spawn_loc );
-					level.zombie_total--;
-					count++;
-					flag_set( "dog_clips" );
 				}
 			}
 			else
@@ -543,21 +539,61 @@ special_dog_spawn_override( spawners, num_to_spawn )
 
 				if( IsDefined( ai ) ) 	
 				{
-					ai.favoriteenemy = favorite_enemy;
 					spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
-					level.zombie_total--;
-					count++;
-					flag_set( "dog_clips" );
+
 				}
 			}
 		}
-		spawn_attempts++;
-		maps\_zombiemode_dogs::waiting_for_next_dog_spawn( count, num_to_spawn );
-		if ( spawn_attempts > 3 )
+		if ( isDefined( ai ) )
 		{
-			return false;
+			ai.favoriteenemy = favorite_enemy;
+			level.zombie_total--;
+			count++;
+			flag_set( "dog_clips" );
+			ai thread dog_spawn_failsafe();
 		}
+		spawn_attempts++;
 	}
 
 	return true;
+}
+
+dog_spawn_failsafe()
+{
+	self endon("death");
+
+	prevorigin = self.origin;
+	prevhealth = self.health;
+	times_checked_health = 0;
+	while ( true )
+	{
+		if( !level.zombie_vars["zombie_use_failsafe"] )
+		{
+			return;
+		}
+
+		wait( 30 );
+
+		if ( self.origin[2] < level.zombie_vars["below_world_check"] )
+		{
+			self dodamage( self.health + 100, (0,0,0) );	
+			break;
+		}
+		if ( DistanceSquared( self.origin, prevorigin ) < 576 ) 
+		{
+			self dodamage( self.health + 100, (0,0,0) );	
+			break;
+		}
+		if ( self.health == prevhealth )
+		{
+			times_checked_health++;
+			if ( times_checked_health > 2 )
+			{
+				self dodamage( self.health + 100, (0,0,0) );
+				break;
+			}
+		}
+		prevorigin = self.origin;
+		prevhealth = self.health;
+	}
 }

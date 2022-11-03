@@ -1,5 +1,7 @@
 #include maps\_utility;
 #include common_scripts\utility;
+#include scripts\sp\wawr_utility;
+
 
 give_player_score( points )
 {
@@ -65,7 +67,7 @@ round_spawning_override()
 	maps\_zombiemode::ai_calculate_health(); 
 
 	//CODER MOD: TOMMY K
-	players = get_players();
+	players = getPlayers();
 	for( i = 0; i < players.size; i++ )
 	{
 		players[i].zombification_time = 0;
@@ -86,7 +88,7 @@ round_spawning_override()
 	{
 		multiplier *= level.round_number * 0.15;
 	}
-	player_num = get_players().size;
+	player_num = getPlayers().size;
 	if( player_num == 1 )
 	{
 		max += int( ( 0.5 * level.zombie_vars["zombie_ai_per_player"] ) * multiplier ); 
@@ -129,41 +131,53 @@ round_spawning_override()
 
 
 	level.zombie_total = max;
-	mixed_spawns = 0;	// Number of mixed spawns this round.  Currently means number of dogs in a mixed round
-
-	// DEBUG HACK:	
-	//max = 1;
 	old_spawn = undefined;
 
 	can_spawn_dogs = isDefined( level._custom_func_table[ "special_dog_spawn" ] ) && IsDefined( level.mixed_rounds_enabled ) && level.mixed_rounds_enabled == 1 && level.round_number > 16;
+	chance_of_dog_wave = 0;
+	should_spawn_guaranteed_dog_wave = false;
+	guaranteed_dog_wave_time = level.round_start_time;
+	dog_wave_count = 0;
 	while ( true )
 	{
-		while( maps\_zombiemode_utility::get_enemy_count() > 31 || level.zombie_total <= 0 )
+		while( maps\_zombiemode_utility::get_enemy_count() >= 24 || level.zombie_total <= 0 )
 		{
 			wait( 0.05 );
 		}
 
+		chance_of_dog_wave += randomInt( 10 );
 
-		should_spawn_dog_wave = can_spawn_dogs && ( randomInt( 1000 ) < 5 );
-
-		if ( should_spawn_dog_wave ) 
+		should_spawn_dog_wave_random = chance_of_dog_wave >= 1000;
+		should_spawn_guaranteed_dog_wave = ( ( guaranteed_dog_wave_time + 80000 ) <= getTime() );
+		if ( can_spawn_dogs && ( should_spawn_dog_wave_random || should_spawn_guaranteed_dog_wave ) ) 
 		{
-			while ( maps\_zombiemode_utility::get_enemy_count() > 12 )
+			players = getPlayers();
+			max_dogs_in_wave = 12;
+			if ( players.size == 1 )
+			{
+				max_dogs_in_wave = 6;
+			}
+			while ( maps\_zombiemode_utility::get_enemy_count() > ( 24 - max_dogs_in_wave ) )
 			{
 				wait 0.5;
 			}
+			players = getPlayers();
 			spawned_dog_count = 0;
-			max_dogs_in_wave = min( level.zombie_total, 12 );
+			max_dogs_in_wave = min( level.zombie_total, max_dogs_in_wave );
 			while ( spawned_dog_count < max_dogs_in_wave )
 			{
 				dog_spawn_success = level [[ level._custom_func_table[ "special_dog_spawn" ] ]]( undefined, 1 );
-				if ( !dog_spawn_success )
+				if ( dog_spawn_success )
 				{
-					break;
+					spawned_dog_count++;
 				}
-				spawned_dog_count++;
 				wait( level.zombie_vars["zombie_spawn_delay"] ); 
 			}
+			players = getPlayers();
+			logPrint( "round_spawning() event: dog wave playercount: " + players.size + "  round: " + level.round_number + " count: " + dog_wave_count + " random: " + cast_bool_to_str( should_spawn_dog_wave_random, "yes no" ) + " time: " + cast_bool_to_str( should_spawn_guaranteed_dog_wave, "yes no" ) );
+			dog_wave_count++;
+			guaranteed_dog_wave_time = getTime() + ( 80000 * dog_wave_count );
+			chance_of_dog_wave = 0;
 			wait( level.zombie_vars["zombie_spawn_delay"] ); 
 			continue;
 		}
@@ -213,7 +227,7 @@ nuke_powerup_override( drop_item )
 	zombies = getaispeciesarray("axis");
 
 	PlayFx( drop_item.fx, drop_item.origin );
-	//	players = get_players();
+	//	players = getPlayers();
 	//	array_thread (players, ::nuke_flash);
 	level thread maps\_zombiemode_powerups::nuke_flash();
 
@@ -267,7 +281,7 @@ nuke_powerup_override( drop_item )
 		}
 		level.zombie_total = new_zombie_total;
 	}
-	players = get_players();
+	players = getPlayers();
 	for(i = 0; i < players.size; i++)
 	{
 		players[i] give_player_score( 400 );
@@ -280,7 +294,7 @@ nuke_powerup_override( drop_item )
 
 full_ammo_powerup_override( drop_item )
 {
-	players = get_players();
+	players = getPlayers();
 
 	for (i = 0; i < players.size; i++)
 	{
@@ -321,7 +335,7 @@ spectators_respawn_override()
 
 	while( 1 )
 	{
-		players = get_players();
+		players = getPlayers();
 		for( i = 0; i < players.size; i++ )
 		{
 			if( players[i].sessionstate == "spectator" )
