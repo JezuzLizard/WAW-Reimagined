@@ -38,6 +38,10 @@ main()
 	level._custom_func_table[ "enemy_is_dog" ] = getFunction( "maps/_zombiemode_utility", "enemy_is_dog" );
 	level._custom_func_table[ "spectator_respawn_prototype" ] = getFunction( "maps/_zombiemode_prototype", "spectator_respawn" );
 	level._end_of_round_funcs = [];
+	level._end_of_round_funcs[ 0 ] = ::increase_max_drops_based_on_round;
+	level._start_of_round_funcs = [];
+	//level._start_of_round_funcs[ 0 ] = ::speed_up_last_zombie;
+	level._start_of_round_funcs[ 0 ] = ::reset_first_nuke_of_round;
 	level thread on_player_connect();
 }
 
@@ -59,6 +63,7 @@ init()
 	level.zombie_kill_times = [];
 
 	level.zombie_vars["zombie_spawn_delay"] = 1.5;
+	level.starting_zombie_spawn_delay = 1.5;
 }
 
 on_player_connect()
@@ -402,4 +407,34 @@ monitor_damage_for_damage_feedback()
 			attacker updateDamageFeedback();
 		}
 	}
+}
+
+increase_max_drops_based_on_round()
+{
+	level.zombie_vars[ "zombie_powerup_drop_max_per_round" ] = 4 + int( floor( level.round_number * 0.1 ) );
+}
+
+speed_up_last_zombie()
+{
+	if( level.round_number > 3 )
+	{
+		zombies = getaiarray( "axis" );
+		while( zombies.size > 0 )
+		{
+			if( zombies.size == 1 && zombies[0].has_legs == true )
+			{
+				var = randomintrange(1, 4);
+				zombies[0] set_run_anim( "sprint" + var );                       
+				zombies[0].run_combatanim = level.scr_anim[zombies[0].animname]["sprint" + var];
+				break;
+			}
+			wait(0.5);
+			zombies = getaiarray("axis");
+		}
+	}	
+}
+
+reset_first_nuke_of_round()
+{
+	level.first_nuke_of_the_round = false;
 }

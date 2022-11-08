@@ -516,7 +516,13 @@ special_dog_spawn_override( spawners, num_to_spawn )
 
 			if( IsDefined( ai ) ) 	
 			{
+				ai.favoriteenemy = favorite_enemy;
 				spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
+				level.zombie_total--;
+				count++;
+				flag_set( "dog_clips" );
+				ai thread dog_spawn_failsafe();
+				return true;
 			}
 		}
 		else
@@ -524,11 +530,16 @@ special_dog_spawn_override( spawners, num_to_spawn )
 			if ( IsDefined( level.dog_spawn_func ) )
 			{
 				spawn_loc = [[level.dog_spawn_func]]( level.enemy_dog_spawns, favorite_enemy );
-
 				ai = maps\_zombiemode_utility::spawn_zombie( level.enemy_dog_spawns[0] );
 				if( IsDefined( ai ) ) 	
 				{
+					ai.favoriteenemy = favorite_enemy;
 					spawn_loc thread maps\_zombiemode_dogs::dog_spawn_fx( ai, spawn_loc );
+					level.zombie_total--;
+					count++;
+					flag_set( "dog_clips" );
+					ai thread dog_spawn_failsafe();
+					return true;
 				}
 			}
 			else
@@ -539,18 +550,15 @@ special_dog_spawn_override( spawners, num_to_spawn )
 
 				if( IsDefined( ai ) ) 	
 				{
+					ai.favoriteenemy = favorite_enemy;
 					spawn_point thread maps\_zombiemode_dogs::dog_spawn_fx( ai );
-
+					level.zombie_total--;
+					count++;
+					flag_set( "dog_clips" );
+					ai thread dog_spawn_failsafe();
+					return true;
 				}
 			}
-		}
-		if ( isDefined( ai ) )
-		{
-			ai.favoriteenemy = favorite_enemy;
-			level.zombie_total--;
-			count++;
-			flag_set( "dog_clips" );
-			ai thread dog_spawn_failsafe();
 		}
 		spawn_attempts++;
 	}
@@ -587,7 +595,7 @@ dog_spawn_failsafe()
 		if ( self.health == prevhealth )
 		{
 			times_checked_health++;
-			if ( times_checked_health > 2 )
+			if ( times_checked_health >= 2 )
 			{
 				self dodamage( self.health + 100, (0,0,0) );
 				break;

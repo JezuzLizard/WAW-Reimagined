@@ -24,9 +24,29 @@ give_player_score( points )
 round_wait_override()
 {
 	level notify( "start_of_round" );
-	func = getFunction( "maps/_zombiemode", "round_wait" );
-	disableDetourOnce( func );
-	[[ func ]]();
+	if ( isDefined( level._start_of_round_funcs ) && level._start_of_round_funcs.size > 0 )
+	{
+		for ( i = 0; i < level._start_of_round_funcs.size; i++ )
+		{
+			level thread [[ level._start_of_round_funcs[ i ] ]]();
+		}
+	}
+	wait( 1 );
+	if( flag("dog_round" ) )
+	{
+		wait(7);
+		while( level.dog_intermission )
+		{
+			wait(0.5);
+		}
+	}
+	else
+	{
+		while( maps\_zombiemode_utility::get_enemy_count() > 0 || level.zombie_total > 0 || level.intermission)
+		{
+			wait( 0.5 );
+		}
+	}
 	if ( isDefined( level._end_of_round_funcs ) && level._end_of_round_funcs.size > 0 )
 	{
 		for ( i = 0; i < level._end_of_round_funcs.size; i++ )
@@ -43,6 +63,7 @@ round_spawning_override()
 /#
 	level endon( "kill_round" );
 #/
+	level endon( "debug_kill_round" );
 
 	level endon( "end_of_round" );
 
@@ -131,6 +152,7 @@ round_spawning_override()
 
 
 	level.zombie_total = max;
+	level.starting_zombie_total = max;
 	old_spawn = undefined;
 
 	can_spawn_dogs = isDefined( level._custom_func_table[ "special_dog_spawn" ] ) && IsDefined( level.mixed_rounds_enabled ) && level.mixed_rounds_enabled == 1 && level.round_number > 16;
@@ -138,6 +160,7 @@ round_spawning_override()
 	should_spawn_guaranteed_dog_wave = false;
 	guaranteed_dog_wave_time = level.round_start_time;
 	dog_wave_count = 0;
+	level.force_dog_wave = false;
 	while ( true )
 	{
 		while( maps\_zombiemode_utility::get_enemy_count() >= 24 || level.zombie_total <= 0 )
@@ -149,7 +172,7 @@ round_spawning_override()
 
 		should_spawn_dog_wave_random = chance_of_dog_wave >= 1000;
 		should_spawn_guaranteed_dog_wave = ( ( guaranteed_dog_wave_time + 80000 ) <= getTime() );
-		if ( can_spawn_dogs && ( should_spawn_dog_wave_random || should_spawn_guaranteed_dog_wave ) ) 
+		if ( can_spawn_dogs && ( should_spawn_dog_wave_random || should_spawn_guaranteed_dog_wave ) || isDefined( level._custom_func_table[ "special_dog_spawn" ] ) && level.force_dog_wave ) 
 		{
 			players = getPlayers();
 			max_dogs_in_wave = 12;
@@ -174,8 +197,9 @@ round_spawning_override()
 				wait( level.zombie_vars["zombie_spawn_delay"] ); 
 			}
 			players = getPlayers();
-			logPrint( "round_spawning() event: dog wave playercount: " + players.size + "  round: " + level.round_number + " count: " + dog_wave_count + " random: " + cast_bool_to_str( should_spawn_dog_wave_random, "yes no" ) + " time: " + cast_bool_to_str( should_spawn_guaranteed_dog_wave, "yes no" ) );
 			dog_wave_count++;
+			logPrint( "round_spawning() event: dog wave playercount: " + players.size + "  round: " + level.round_number + " count: " + dog_wave_count + " random: " + cast_bool_to_str( should_spawn_dog_wave_random, "yes no" ) + " time: " + cast_bool_to_str( should_spawn_guaranteed_dog_wave, "yes no" ) + " forced: " + cast_bool_to_str( level.force_dog_wave, "yes no" ) + "\n" );
+			level.force_dog_wave = false;
 			guaranteed_dog_wave_time = getTime() + ( 80000 * dog_wave_count );
 			chance_of_dog_wave = 0;
 			wait( level.zombie_vars["zombie_spawn_delay"] ); 
@@ -202,24 +226,6 @@ round_spawning_override()
 		}
 		wait( level.zombie_vars["zombie_spawn_delay"] ); 
 	}
-
-	if( level.round_number > 3 )
-	{
-		zombies = getaiarray( "axis" );
-		while( zombies.size > 0 )
-		{
-			if( zombies.size == 1 && zombies[0].has_legs == true )
-			{
-				var = randomintrange(1, 4);
-				zombies[0] set_run_anim( "sprint" + var );                       
-				zombies[0].run_combatanim = level.scr_anim[zombies[0].animname]["sprint" + var];
-			}
-			wait(0.5);
-			zombies = getaiarray("axis");
-		}
-
-	}
-
 }
 
 nuke_powerup_override( drop_item )
@@ -274,12 +280,26 @@ nuke_powerup_override( drop_item )
 	}
 	if ( !isdefined( level.flag[ "dog_round" ] ) || !flag( "dog_round" ) )
 	{
-		new_zombie_total = level.zombie_total - 24;
-		if ( new_zombie_total < 0 )
+		new_zombie_total = level.zombie_total;
+		starting_zombie_total = level.starting_zombie_total;
+		if ( !isDefined( level.first_nuke_of_the_round ) || !level.first_nuke_of_the_round )
 		{
-			new_zombie_total = 0;
+			level.first_nuke_of_the_round = true;
+			printConsole( "new_zombie_total start: " + new_zombie_total );
+			new_zombie_total = new_zombie_total - int( ceil( starting_zombie_total * 0.1 ) );
 		}
-		level.zombie_total = new_zombie_total;
+		else 
+		{
+			new_zombie_total = new_zombie_total - int( ceil( starting_zombie_total * 0.02 ) );
+		}
+		new_zombie_total_int = int( new_zombie_total );
+		new_zombie_total_int = new_zombie_total_int - int( max( level.round_number, 24 ) );
+		if ( new_zombie_total_int < 0 )
+		{
+			new_zombie_total_int = 0;
+		}
+		printConsole( "new_zombie_total end: " + new_zombie_total_int );
+		level.zombie_total = new_zombie_total_int;
 	}
 	players = getPlayers();
 	for(i = 0; i < players.size; i++)
