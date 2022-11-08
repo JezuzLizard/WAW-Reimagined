@@ -285,7 +285,6 @@ nuke_powerup_override( drop_item )
 		if ( !isDefined( level.first_nuke_of_the_round ) || !level.first_nuke_of_the_round )
 		{
 			level.first_nuke_of_the_round = true;
-			printConsole( "new_zombie_total start: " + new_zombie_total );
 			new_zombie_total = new_zombie_total - int( ceil( starting_zombie_total * 0.1 ) );
 		}
 		else 
@@ -293,12 +292,11 @@ nuke_powerup_override( drop_item )
 			new_zombie_total = new_zombie_total - int( ceil( starting_zombie_total * 0.02 ) );
 		}
 		new_zombie_total_int = int( new_zombie_total );
-		new_zombie_total_int = new_zombie_total_int - int( max( level.round_number, 24 ) );
+		new_zombie_total_int = new_zombie_total_int - 24;
 		if ( new_zombie_total_int < 0 )
 		{
 			new_zombie_total_int = 0;
 		}
-		printConsole( "new_zombie_total end: " + new_zombie_total_int );
 		level.zombie_total = new_zombie_total_int;
 	}
 	players = getPlayers();
