@@ -72,6 +72,7 @@ on_player_connect()
 	while ( true )
 	{
 		level waittill( "connected", player );
+		player thread health_bar_hud();
 		player init_damage_feedback_hud();
 		player setClientDvar( "aim_lockon_enabled", 1 );
 	}
@@ -138,11 +139,11 @@ enemy_counter_hud()
 {
 	enemy_counter_hud = newHudElem();
 	enemy_counter_hud.alignx = "left";
-	enemy_counter_hud.aligny = "bottom";
+	enemy_counter_hud.aligny = "middle";
 	enemy_counter_hud.horzalign = "left";
-	enemy_counter_hud.vertalign = "bottom";
+	enemy_counter_hud.vertalign = "middle";
 	enemy_counter_hud.x += 5;
-	enemy_counter_hud.y -= 90;
+	enemy_counter_hud.y += 100;
 	enemy_counter_hud.fontscale = 1.4;
 	enemy_counter_hud.alpha = 0;
 	enemy_counter_hud.color = ( 1, 1, 1 );
@@ -175,11 +176,11 @@ sph_hud()
 {
 	enemy_counter_hud = newHudElem();
 	enemy_counter_hud.alignx = "left";
-	enemy_counter_hud.aligny = "bottom";
+	enemy_counter_hud.aligny = "middle";
 	enemy_counter_hud.horzalign = "left";
-	enemy_counter_hud.vertalign = "bottom";
+	enemy_counter_hud.vertalign = "middle";
 	enemy_counter_hud.x += 5;
-	enemy_counter_hud.y -= 120;
+	enemy_counter_hud.y += 112;
 	enemy_counter_hud.fontscale = 1.4;
 	enemy_counter_hud.alpha = 0;
 	enemy_counter_hud.color = ( 1, 1, 1 );
@@ -437,4 +438,89 @@ speed_up_last_zombie()
 reset_first_nuke_of_round()
 {
 	level.first_nuke_of_the_round = false;
+}
+
+health_bar_hud()
+{
+	level endon( "end_game" );
+	self endon("disconnect");
+	
+	health_bar = self maps\_hud_util::createBar( (1, 1, 1), level.primaryProgressBarWidth, level.primaryProgressBarHeight );
+	health_bar.hidewheninmenu = 1;
+	health_bar.bar.hidewheninmenu = 1;
+	health_bar.barframe.hidewheninmenu = 1;
+	health_bar.alignx = "left";
+	health_bar.aligny = "middle";
+	health_bar.horzalign = "left";
+	health_bar.vertalign = "middle";
+	health_bar.bar.alignx = "left";
+	health_bar.bar.aligny = "middle";
+	health_bar.bar.horzalign = "left";
+	health_bar.bar.vertalign = "middle";
+	health_bar.barFrame.alignx = "left";
+	health_bar.barFrame.aligny = "middle";
+	health_bar.barFrame.horzalign = "left";
+	health_bar.barFrame.vertalign = "middle";
+	health_bar.x += 5;
+	health_bar.bar.x += 5;
+	health_bar.barFrame.x += 5;
+	health_bar.y += 134;
+	health_bar.bar.y += 134;
+	health_bar.barFrame.y += 134;
+	health_bar_text = self maps\_hud_util::createfontstring( "objective", 1.4 );
+	health_bar_text.hidewheninmenu = 1;
+	health_bar_text.alignx = "left";
+	health_bar_text.aligny = "middle";
+	health_bar_text.horzalign = "left";
+	health_bar_text.vertalign = "middle";
+	health_bar_text.x += 56;
+	health_bar_text.y += 134;
+	health_bar thread cleanup_health_bar_on_disconnect( self );
+	health_bar thread cleanup_health_bar_on_intermission();
+	health_bar_text thread cleanup_health_bar_on_disconnect( self );
+	health_bar_text thread cleanup_health_bar_on_intermission();
+
+	while ( true )
+	{
+		if ( !maps\_zombiemode_utility::is_player_valid( self ) || self maps\_laststand::player_is_in_laststand() )
+		{
+			if (health_bar.alpha != 0)
+			{
+				health_bar.alpha = 0;
+				health_bar.bar.alpha = 0;
+				health_bar.barframe.alpha = 0;
+				health_bar_text.alpha = 0;
+			}
+			wait 1;
+			continue;
+		}
+		if ( health_bar.alpha != 0.8 )
+		{
+			health_bar fadeOverTime( 0.25 );
+			health_bar.alpha = 0.8;
+			health_bar.bar fadeOverTime( 0.25 );
+			health_bar.bar.alpha = 0.8;
+			health_bar.barframe fadeOverTime( 0.25 );
+			health_bar.barframe.alpha = 0.8;
+			health_bar_text fadeOverTime( 0.25 );
+			health_bar_text.alpha = 0.8;
+			wait 0.25;
+		}
+		health_bar maps\_hud_util::updatebar( self.health / self.maxhealth );
+		health_bar_text setvalue( self.health );
+		wait 0.05;
+	}
+}
+
+cleanup_health_bar_on_disconnect( player )
+{
+	level endon( "intermission" );
+	player waittill( "disconnect" );
+	self maps\_hud_util::destroyelem();
+}
+
+cleanup_health_bar_on_intermission()
+{
+	level waittill( "intermission" );
+	self maps\_hud_util::destroyelem();
 }
