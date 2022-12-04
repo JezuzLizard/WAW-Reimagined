@@ -96,3 +96,59 @@ cast_bool_to_str( bool, binary_string_options )
 	}
 	return bool + "";
 }
+
+kill_round()
+{
+	level notify( "debug_kill_round" );
+	level.zombie_total = 0;
+	ais = getAiSpeciesArray( "axis", "all" );
+	for ( i = 0; i < ais.size; i++ )
+	{
+		zombie = ais[ i ];
+		if ( isdefined( zombie ) )
+		{
+			zombie dodamage( zombie.health + 100, (0,0,0) );
+		}
+	}
+}
+
+set_zombie_spawn_rate_for_round( round_number )
+{
+	if ( !isDefined( level.starting_zombie_spawn_delay ) )
+	{
+		level.starting_zombie_spawn_delay = 2;
+	}
+	timer = level.starting_zombie_spawn_delay;
+	for ( i = 1; i <= round_number; i++ )
+	{
+		if ( timer > 0.08 )
+		{
+			timer = timer * 0.95;
+			continue;
+		}
+
+		if ( timer < 0.08 )
+		{
+			timer = 0.08;
+			break;
+		}
+	}
+	level.zombie_vars["zombie_spawn_delay"] = timer;
+}
+
+set_zombie_move_speed_for_round( round_number )
+{
+	level.zombie_move_speed = round_number * 8;
+}
+
+set_zombie_health_for_round( round_number )
+{
+	level.zombie_health = level.zombie_vars["zombie_health_start"];
+	for ( i = 2; i <= round_number; i++ )
+	{
+		if ( i >= 10 )
+			level.zombie_health += int( level.zombie_health * level.zombie_vars["zombie_health_increase_percent"] );
+		else
+			level.zombie_health = int( level.zombie_health + level.zombie_vars["zombie_health_increase"] );
+	}
+}

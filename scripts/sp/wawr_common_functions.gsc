@@ -85,7 +85,7 @@ round_spawning_override()
 	}
 #/
 
-	maps\_zombiemode::ai_calculate_health(); 
+	calculate_zombie_health_custom();
 
 	//CODER MOD: TOMMY K
 	players = getPlayers();
@@ -161,6 +161,7 @@ round_spawning_override()
 	guaranteed_dog_wave_time = level.round_start_time;
 	dog_wave_count = 0;
 	level.force_dog_wave = false;
+	level thread speed_up_last_zombie();
 	while ( true )
 	{
 		while( maps\_zombiemode_utility::get_enemy_count() >= 24 || level.zombie_total <= 0 )
@@ -180,14 +181,14 @@ round_spawning_override()
 			{
 				max_dogs_in_wave = 6;
 			}
-			while ( maps\_zombiemode_utility::get_enemy_count() > ( 24 - max_dogs_in_wave ) )
+			while ( maps\_zombiemode_utility::get_enemy_count() > ( 24 - max_dogs_in_wave ) && level.zombie_total > 0 )
 			{
 				wait 0.5;
 			}
 			players = getPlayers();
 			spawned_dog_count = 0;
 			max_dogs_in_wave = min( level.zombie_total, max_dogs_in_wave );
-			while ( spawned_dog_count < max_dogs_in_wave )
+			while ( ( spawned_dog_count < max_dogs_in_wave ) && level.zombie_total > 0 )
 			{
 				dog_spawn_success = level [[ level._custom_func_table[ "special_dog_spawn" ] ]]( undefined, 1 );
 				if ( dog_spawn_success )
@@ -226,6 +227,107 @@ round_spawning_override()
 		}
 		wait( level.zombie_vars["zombie_spawn_delay"] ); 
 	}
+}
+
+speed_up_last_zombie()
+{
+	level endon( "end_of_round" );
+
+	level notify( "speed_up_last_zombie" );
+	level endon( "speed_up_last_zombie" );
+	
+	if( level.round_number > 3 )
+	{
+		zombies = getaiarray( "axis" );
+		while( true )
+		{
+			if ( level.zombie_total <= 0 && zombies.size == 1 && zombies[0].has_legs )
+			{
+				var = randomintrange(1, 4);
+				zombies[0] set_run_anim( "sprint" + var );                       
+				zombies[0].run_combatanim = level.scr_anim[zombies[0].animname]["sprint" + var];
+				break;
+			}
+			wait(0.5);
+			zombies = getaiarray("axis");
+		}
+	}	
+}
+
+calculate_zombie_health_custom()
+{
+	if ( !isDefined( level.post_insta_kill_rounds ) )
+	{
+		level.post_insta_kill_rounds = 0;
+	}
+	health = undefined;
+	if ( level.round_number >= 31 )
+	{
+		health = calculate_insta_kill_rounds();
+		level.post_insta_kill_rounds++;
+	}
+	if ( !isDefined( health ) )
+	{
+		level.zombie_health = calculate_normal_health();
+	}
+	else 
+	{
+		level.zombie_health = health;
+	}
+	if ( level.round_is_insta_kill )
+	{
+		iprintln( "All zombies are insta kill this round" );
+	}
+}
+
+calculate_insta_kill_rounds()
+{
+	level.round_is_insta_kill = 0;
+	if ( level.round_number >= 163 )
+	{
+		return undefined;
+	}
+	health = level.zombie_vars[ "zombie_health_start" ];
+	for ( i = 2; i <= ( level.post_insta_kill_rounds + 163 ); i++ )
+	{
+		if ( i >= 10 )
+		{
+			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
+		}
+		else
+		{
+			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
+		}
+	}
+	if ( health < 0 )
+	{
+		level.round_is_insta_kill = 1;
+		return 20;
+	}
+	return undefined;
+}
+
+calculate_normal_health()
+{
+	level.round_is_insta_kill = 0;
+	health = level.zombie_vars[ "zombie_health_start" ];
+	for ( i = 2; i <= level.round_number; i++ )
+	{
+		if ( i >= 10 )
+		{
+			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
+		}
+		else
+		{
+			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
+		}
+	}
+	if ( health < 0 )
+	{
+		level.round_is_insta_kill = 1;
+		return 20;
+	}
+	return health;
 }
 
 nuke_powerup_override( drop_item )

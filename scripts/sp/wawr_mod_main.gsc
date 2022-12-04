@@ -40,7 +40,6 @@ main()
 	level._end_of_round_funcs = [];
 	level._end_of_round_funcs[ 0 ] = ::increase_max_drops_based_on_round;
 	level._start_of_round_funcs = [];
-	//level._start_of_round_funcs[ 0 ] = ::speed_up_last_zombie;
 	level._start_of_round_funcs[ 0 ] = ::reset_first_nuke_of_round;
 	level thread on_player_connect();
 }
@@ -58,7 +57,6 @@ init()
 	level thread enemy_counter_hud();
 	level thread calculate_sph();
 	level thread sph_hud();
-	level thread insta_kill_rounds_tracker();
 	level.sph_hud_counter = 0;
 	level.zombie_kill_times = [];
 
@@ -238,84 +236,6 @@ calculate_sph()
 	}
 }
 
-insta_kill_rounds_tracker()
-{
-	level.post_insta_kill_rounds = 0;
-	while ( 1 )
-	{
-		level waittill( "start_of_round" );
-		wait 0.5;
-		health = undefined;
-		if ( level.round_number >= 31 )
-		{
-			health = calculate_insta_kill_rounds();
-			level.post_insta_kill_rounds++;
-		}
-		if ( !isDefined( health ) )
-		{
-			level.zombie_health = calculate_normal_health();
-		}
-		else 
-		{
-			level.zombie_health = health;
-		}
-		if ( level.round_is_insta_kill )
-		{
-			iprintln( "All zombies are insta kill this round" );
-		}
-	}
-}
-
-calculate_insta_kill_rounds()
-{
-	level.round_is_insta_kill = 0;
-	if ( level.round_number >= 163 )
-	{
-		return undefined;
-	}
-	health = level.zombie_vars[ "zombie_health_start" ];
-	for ( i = 2; i <= ( level.post_insta_kill_rounds + 163 ); i++ )
-	{
-		if ( i >= 10 )
-		{
-			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
-		}
-		else
-		{
-			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
-		}
-	}
-	if ( health < 0 )
-	{
-		level.round_is_insta_kill = 1;
-		return 20;
-	}
-	return undefined;
-}
-
-calculate_normal_health()
-{
-	level.round_is_insta_kill = 0;
-	health = level.zombie_vars[ "zombie_health_start" ];
-	for ( i = 2; i <= level.round_number; i++ )
-	{
-		if ( i >= 10 )
-		{
-			health += int( health * level.zombie_vars[ "zombie_health_increase_percent" ] );
-		}
-		else
-		{
-			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
-		}
-	}
-	if ( health < 0 )
-	{
-		level.round_is_insta_kill = 1;
-		return 20;
-	}
-	return health;
-}
-
 /*
 purchase_xp_on_hud()
 {
@@ -412,28 +332,10 @@ monitor_damage_for_damage_feedback()
 
 increase_max_drops_based_on_round()
 {
-	level.zombie_vars[ "zombie_powerup_drop_max_per_round" ] = 4 + int( floor( level.round_number * 0.1 ) );
+	level.zombie_vars[ "zombie_powerup_drop_max_per_round" ] = 4 + int( floor( level.round_number * 0.05 ) );
 }
 
-speed_up_last_zombie()
-{
-	if( level.round_number > 3 )
-	{
-		zombies = getaiarray( "axis" );
-		while( zombies.size > 0 )
-		{
-			if( zombies.size == 1 && zombies[0].has_legs == true )
-			{
-				var = randomintrange(1, 4);
-				zombies[0] set_run_anim( "sprint" + var );                       
-				zombies[0].run_combatanim = level.scr_anim[zombies[0].animname]["sprint" + var];
-				break;
-			}
-			wait(0.5);
-			zombies = getaiarray("axis");
-		}
-	}	
-}
+
 
 reset_first_nuke_of_round()
 {
@@ -444,8 +346,8 @@ health_bar_hud()
 {
 	level endon( "end_game" );
 	self endon("disconnect");
-	
 	health_bar = self maps\_hud_util::createBar( (1, 1, 1), level.primaryProgressBarWidth, level.primaryProgressBarHeight );
+	health_bar endon( "destroyed" );
 	health_bar.hidewheninmenu = 1;
 	health_bar.bar.hidewheninmenu = 1;
 	health_bar.barframe.hidewheninmenu = 1;
@@ -467,7 +369,7 @@ health_bar_hud()
 	health_bar.y += 134;
 	health_bar.bar.y += 134;
 	health_bar.barFrame.y += 134;
-	health_bar_text = self maps\_hud_util::createfontstring( "objective", 1.4 );
+	health_bar_text = maps\_hud_util::createfontstring( "objective", 1.4, self );
 	health_bar_text.hidewheninmenu = 1;
 	health_bar_text.alignx = "left";
 	health_bar_text.aligny = "middle";
@@ -475,10 +377,8 @@ health_bar_hud()
 	health_bar_text.vertalign = "middle";
 	health_bar_text.x += 56;
 	health_bar_text.y += 134;
-	health_bar thread cleanup_health_bar_on_disconnect( self );
-	health_bar thread cleanup_health_bar_on_intermission();
-	health_bar_text thread cleanup_health_bar_on_disconnect( self );
-	health_bar_text thread cleanup_health_bar_on_intermission();
+	health_bar thread cleanup_health_bar_on_intermission( self );
+	health_bar_text thread cleanup_health_bar_on_intermission( self );
 
 	while ( true )
 	{
@@ -512,15 +412,10 @@ health_bar_hud()
 	}
 }
 
-cleanup_health_bar_on_disconnect( player )
+cleanup_health_bar_on_intermission( player )
 {
-	level endon( "intermission" );
-	player waittill( "disconnect" );
-	self maps\_hud_util::destroyelem();
-}
-
-cleanup_health_bar_on_intermission()
-{
+	player endon( "disconnect" );
 	level waittill( "intermission" );
+	self notify( "destroyed" );
 	self maps\_hud_util::destroyelem();
 }
