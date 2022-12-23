@@ -322,6 +322,10 @@ calculate_normal_health()
 			health = int( health + level.zombie_vars[ "zombie_health_increase" ] );
 		}
 	}
+	if ( isDefined( level.zombie_health_bonus_func ) )
+	{
+		level [[ level.zombie_health_bonus_func ]]();
+	}
 	if ( health < 0 )
 	{
 		level.round_is_insta_kill = 1;
@@ -508,4 +512,17 @@ waiting_for_next_dog_spawn_override( count, max )
 
 	wait( default_wait );
 
+}
+
+dog_health_increase_override()
+{
+	level.dog_health = 100;
+	for ( i = 0; i < level.dog_round_count && i < 4; i++ )
+	{
+		level.dog_health += 400;
+	}
+	if ( isDefined( level.dog_health_bonus_func ) )
+	{
+		level [[ level.dog_health_bonus_func ]]();
+	}
 }

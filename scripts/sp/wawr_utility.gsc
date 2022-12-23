@@ -152,3 +152,17 @@ set_zombie_health_for_round( round_number )
 			level.zombie_health = int( level.zombie_health + level.zombie_vars["zombie_health_increase"] );
 	}
 }
+
+register_weapon_actor_damage_callback( weapon, callback )
+{
+	if ( !isDefined( level.weapon_actor_damage_callbacks ) )
+	{
+		level.weapon_actor_damage_callbacks = [];
+	}
+	level.weapon_actor_damage_callbacks[ weapon ] = callback;
+}
+
+is_true( value )
+{
+	return isDefined( value ) && value;
+}

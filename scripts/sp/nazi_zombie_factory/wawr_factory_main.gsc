@@ -11,6 +11,7 @@ main()
 	replaceFunc( maps\nazi_zombie_factory_teleporter::teleport_pad_active_think, ::teleport_pad_active_think_override );
 	replaceFunc( maps\_zombiemode_powerups::special_drop_setup, ::special_drop_setup_override );
 	replaceFunc( maps\_zombiemode_dogs::special_dog_spawn, ::special_dog_spawn_override );
+	replaceFunc( maps\_zombiemode_cymbal_monkey::play_sam_furnace, ::play_sam_furnace_override );
 	level thread reset_teleporter_cost();
 }
 
@@ -628,4 +629,64 @@ dog_spawn_failsafe()
 		prevorigin = self.origin;
 		prevhealth = self.health;
 	}
+}
+
+//meme
+play_sam_furnace_override()
+{
+	if ( !isDefined( level.ee_world_difficulty ) )
+	{
+		level.ee_world_difficulty = 0;
+		level.showing_difficulty_increase_popup = false;
+	}
+	wait(2);
+	maps\_zombiemode_utility::play_sound_2d( "sam_furnace_1" );
+	wait(2.5);
+	maps\_zombiemode_utility::play_sound_2d( "sam_furnace_2" );
+	level.ee_world_difficulty++;
+	logprint( "Der Riese - Monkey thrown in fire new difficulty " + level.ee_world_difficulty + "\n" );
+	level.zombie_health = int( level.zombie_health * 1.1 );
+	level.dog_health += 50;
+	if ( !level.showing_difficulty_increase_popup )
+	{
+		level thread display_difficulty_increase_message();
+	}
+}
+
+display_difficulty_increase_message()
+{
+	level.showing_difficulty_increase_popup = true;
+	hudelem = maps\_hud_util::createServerFontString( "default", 1.8 );
+	hudelem maps\_hud_util::setPoint( "TOP", undefined, 0, 290 );
+	hudelem.sort = 0.5;
+	hudelem.alpha = 0;
+	hudelem.fontscale = 3;
+	if ( randomInt( 2 ) == 0 )
+	{
+		hudelem.label = "The world grows ever more difficult";
+	}
+	else 
+	{
+		hudelem.label = "The world becomes more perilous";
+	}
+	hudelem fadeovertime( 1 );
+	hudelem.alpha = 1;
+	/*
+	while ( hudelem.fontscale < 3 )
+	{
+		hudelem.fontscale += 0.05;
+		wait 0.05;
+	}
+	*/
+	//hudelem changeFontScaleOverTime( 0.75 );
+	//hudelem.fontscale = 3;
+	wait 1;
+	
+	hudelem fadeovertime( 0.75 );
+	hudelem.alpha = 0;
+	//hudelem changeFontScaleOverTime( 0.75 );
+	//hudelem.fontscale = 1.8;
+	wait 0.75;
+	hudelem maps\_hud_util::destroyelem();
+	level.showing_difficulty_increase_popup = false;
 }

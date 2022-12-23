@@ -1,5 +1,6 @@
 #include maps\_utility;
 #include common_scripts\utility;
+#include scripts\sp\wawr_utility;
 
 /*
 #define XP_PER_NORMAL_KILL 2
@@ -17,6 +18,12 @@ main()
 	replaceFunc( maps\_zombiemode_utility::spawn_zombie, ::spawn_zombie_override );
 	replaceFunc( maps\_zombiemode_powerups::include_zombie_powerup, ::include_zombie_powerup_override );
 	replaceFunc( maps\_zombiemode_powerups::full_ammo_powerup, scripts\sp\wawr_common_functions::full_ammo_powerup_override );
+
+	dog_health_increase_func = getFunction( "maps/_zombiemode_dogs", "dog_health_increase" );
+	if ( isDefined( dog_health_increase_func ) )
+	{
+		replaceFunc( dog_health_increase_func, scripts\sp\wawr_common_functions::dog_health_increase_override );
+	}
 	if ( level.script != "mazi_zombie_prototype" && level.script != "nazi_zombie_asylum" )
 	{
 		replaceFunc( maps\_zombiemode::round_wait, scripts\sp\wawr_common_functions::round_wait_override );
@@ -54,6 +61,8 @@ init()
 	SetDvar( "perk_weaprateEnhanced", 1 );
 	setDvar( "scr_damagefeedback", 1 );
 	setDvar( "g_friendlyFireDist", 0 );
+	setDvar( "player_backspeedscale", 1 );
+	setDvar( "player_strafespeedscale", 1 );
 	level thread enemy_counter_hud();
 	level thread calculate_sph();
 	level thread sph_hud();
@@ -62,6 +71,13 @@ init()
 
 	level.zombie_vars["zombie_spawn_delay"] = 1.5;
 	level.starting_zombie_spawn_delay = 1.5;
+	level.shock_onpain = false;
+	level.callbackActorDamage = ::Callback_ActorDamage;
+	register_weapon_actor_damage_callback( "ray_gun", ::ray_gun_bonus_damage );
+	register_weapon_actor_damage_callback( "ray_gun_upgraded", ::ray_gun_upgraded_bonus_damage );
+	level.zombie_health_bonus_func = ::monkey_in_fire_zombie_health_bonus;
+	level.dog_health_bonus_func = ::monkey_in_fire_dog_health_bonus;
+	level.wawr_init_done = true;
 }
 
 on_player_connect()
@@ -70,6 +86,7 @@ on_player_connect()
 	while ( true )
 	{
 		level waittill( "connected", player );
+		//player thread spawn_random_hudelems();
 		player thread health_bar_hud();
 		player init_damage_feedback_hud();
 		player setClientDvar( "aim_lockon_enabled", 1 );
@@ -418,4 +435,82 @@ cleanup_health_bar_on_intermission( player )
 	level waittill( "intermission" );
 	self notify( "destroyed" );
 	self maps\_hud_util::destroyelem();
+}
+
+spawn_random_hudelems()
+{
+	for ( i = 0; i < 50; i++ )
+	{
+		text = maps\_hud_util::createfontstring( "objective", 1.4, self );
+		text.alignx = "center";
+		text.aligny = "middle";
+		text.horzalign = "center";
+		text.vertalign = "middle";
+		text.x = randomIntRange( -100, 100 );
+		text.y = randomIntRange( -100, 100 );
+		text.alpha = ( i % 2 ) == 0;
+		text setValue( i );
+	}
+}
+
+Callback_ActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset )
+{
+
+	if ( isDefined( sWeapon ) && isDefined( level.weapon_actor_damage_callbacks ) && isDefined( level.weapon_actor_damage_callbacks[ sWeapon ] ) )
+	{
+		iDamage = self [[ level.weapon_actor_damage_callbacks[ sWeapon ] ]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset );
+	}
+
+	self FinishActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset );
+}
+
+ray_gun_bonus_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset )
+{
+	bonus_damage_flat = 50 * level.round_number;
+	bonus_damage_percent = 0.10;
+	if ( isDefined( self.animname ) && self.animname == "zombie" && !is_true( self.has_legs ) )
+	{
+		bonus_damage_percent += 0.10;
+	}
+	iDamage += bonus_damage_flat + int( self.health * bonus_damage_percent );
+
+	return iDamage;
+}
+
+ray_gun_upgraded_bonus_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset )
+{
+	bonus_damage_flat = 100 * level.round_number;
+	bonus_damage_percent = 0.15;
+	if ( isDefined( self.animname ) && self.animname == "zombie" && !is_true( self.has_legs ) )
+	{
+		bonus_damage_percent += 0.15;
+	}
+	iDamage += bonus_damage_flat + int( self.health * bonus_damage_percent );
+
+	return iDamage;	
+}
+
+monkey_in_fire_zombie_health_bonus()
+{
+	if ( !isDefined( level.ee_world_difficulty ) || level.ee_world_difficulty <= 0 )
+	{
+		return;
+	}
+	for ( i = 0; i < level.ee_world_difficulty; i++ )
+	{
+		level.zombie_health += 150;
+		level.zombie_health = int( level.zombie_health * 1.1 );
+	}
+}
+
+monkey_in_fire_dog_health_bonus()
+{
+	if ( !isDefined( level.ee_world_difficulty ) || level.ee_world_difficulty <= 0 )
+	{
+		return;
+	}
+	for ( i = 0; i < level.ee_world_difficulty; i++ )
+	{
+		level.dog_health += 50;
+	}
 }
