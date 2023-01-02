@@ -35,17 +35,10 @@ round_wait_override()
 	if( flag("dog_round" ) )
 	{
 		wait(7);
-		while( level.dog_intermission )
-		{
-			wait(0.5);
-		}
 	}
-	else
+	while( maps\_zombiemode_utility::get_enemy_count() > 0 || level.zombie_total > 0 || level.intermission)
 	{
-		while( maps\_zombiemode_utility::get_enemy_count() > 0 || level.zombie_total > 0 || level.intermission)
-		{
-			wait( 0.5 );
-		}
+		wait( 0.5 );
 	}
 	if ( isDefined( level._end_of_round_funcs ) && level._end_of_round_funcs.size > 0 )
 	{
@@ -86,7 +79,8 @@ round_spawning_override()
 #/
 
 	calculate_zombie_health_custom();
-
+	set_zombie_spawn_rate_for_round( level.round_number );
+	set_zombie_move_speed_for_round( level.round_number );
 	//CODER MOD: TOMMY K
 	players = getPlayers();
 	for( i = 0; i < players.size; i++ )
@@ -324,7 +318,7 @@ calculate_normal_health()
 	}
 	if ( isDefined( level.zombie_health_bonus_func ) )
 	{
-		level [[ level.zombie_health_bonus_func ]]();
+		health += level [[ level.zombie_health_bonus_func ]]();
 	}
 	if ( health < 0 )
 	{

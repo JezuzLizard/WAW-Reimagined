@@ -77,6 +77,8 @@ init()
 	register_weapon_actor_damage_callback( "ray_gun_upgraded", ::ray_gun_upgraded_bonus_damage );
 	level.zombie_health_bonus_func = ::monkey_in_fire_zombie_health_bonus;
 	level.dog_health_bonus_func = ::monkey_in_fire_dog_health_bonus;
+	level.zombie_movespeed_bonus_func = ::monkey_in_fire_zombie_bonus_speed;
+	level.zombie_spawnrate_bonus_func = ::monkey_in_fire_zombie_bonus_spawnrate;
 	level.wawr_init_done = true;
 }
 
@@ -291,7 +293,7 @@ init_damage_feedback_hud()
 	self.hud_damagefeedback.alpha = 0;
 	self.hud_damagefeedback.archived = true;
 	self.hud_damagefeedback.color = ( 1, 1, 1 );
-	self.hud_damagefeedback setShader( "damage_feedback", 24, 24 );
+	self.hud_damagefeedback setShader( "damage_feedback", 24, 48 );
 
 	self.hud_damagefeedback_kill = newClientHudElem( self );
 	self.hud_damagefeedback_kill.alignX = "center";
@@ -301,7 +303,7 @@ init_damage_feedback_hud()
 	self.hud_damagefeedback_kill.alpha = 0;
 	self.hud_damagefeedback_kill.archived = true;
 	self.hud_damagefeedback_kill.color = ( 1, 0, 0 );
-	self.hud_damagefeedback_kill setShader( "damage_feedback", 24, 24 );
+	self.hud_damagefeedback_kill setShader( "damage_feedback", 24, 48 );
 }
 
 updateDamageFeedback()
@@ -466,26 +468,26 @@ Callback_ActorDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sW
 
 ray_gun_bonus_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset )
 {
-	bonus_damage_flat = 50 * level.round_number;
+	bonus_damage_flat = 25 * level.round_number;
 	bonus_damage_percent = 0.10;
 	if ( isDefined( self.animname ) && self.animname == "zombie" && !is_true( self.has_legs ) )
 	{
 		bonus_damage_percent += 0.10;
 	}
-	iDamage += bonus_damage_flat + int( self.health * bonus_damage_percent );
+	iDamage = iDamage + bonus_damage_flat + int( self.maxhealth * bonus_damage_percent );
 
 	return iDamage;
 }
 
 ray_gun_upgraded_bonus_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, iModelIndex, iTimeOffset )
 {
-	bonus_damage_flat = 100 * level.round_number;
+	bonus_damage_flat = 50 * level.round_number;
 	bonus_damage_percent = 0.15;
 	if ( isDefined( self.animname ) && self.animname == "zombie" && !is_true( self.has_legs ) )
 	{
 		bonus_damage_percent += 0.15;
 	}
-	iDamage += bonus_damage_flat + int( self.health * bonus_damage_percent );
+	iDamage = iDamage + bonus_damage_flat + int( self.maxhealth * bonus_damage_percent );
 
 	return iDamage;	
 }
@@ -494,13 +496,15 @@ monkey_in_fire_zombie_health_bonus()
 {
 	if ( !isDefined( level.ee_world_difficulty ) || level.ee_world_difficulty <= 0 )
 	{
-		return;
+		return 0;
 	}
+	health = 0;
 	for ( i = 0; i < level.ee_world_difficulty; i++ )
 	{
-		level.zombie_health += 150;
-		level.zombie_health = int( level.zombie_health * 1.1 );
+		health += int( level.zombie_health + level.zombie_vars["zombie_health_increase"] );
+		health += int( level.zombie_health * ( level.zombie_vars["zombie_health_increase_percent"] / 100 ) );
 	}
+	return health;
 }
 
 monkey_in_fire_dog_health_bonus()
@@ -513,4 +517,37 @@ monkey_in_fire_dog_health_bonus()
 	{
 		level.dog_health += 50;
 	}
+}
+
+monkey_in_fire_zombie_bonus_speed()
+{
+	if ( !isDefined( level.ee_world_difficulty ) || level.ee_world_difficulty <= 0 )
+	{
+		return;
+	}
+	level.zombie_move_speed += level.ee_world_difficulty * 8;
+}
+
+monkey_in_fire_zombie_bonus_spawnrate()
+{
+	if ( !isDefined( level.ee_world_difficulty ) || level.ee_world_difficulty <= 0 )
+	{
+		return;
+	}
+	timer = level.zombie_vars[ "zombie_spawn_delay" ];
+	for ( i = 1; i <= level.ee_world_difficulty; i++ )
+	{
+		if ( timer > 0.08 )
+		{
+			timer = timer * 0.95;
+			continue;
+		}
+
+		if ( timer < 0.08 )
+		{
+			timer = 0.08;
+			break;
+		}
+	}
+	level.zombie_vars[ "zombie_spawn_delay" ] = timer;
 }

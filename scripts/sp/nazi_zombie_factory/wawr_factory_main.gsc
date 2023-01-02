@@ -12,6 +12,7 @@ main()
 	replaceFunc( maps\_zombiemode_powerups::special_drop_setup, ::special_drop_setup_override );
 	replaceFunc( maps\_zombiemode_dogs::special_dog_spawn, ::special_dog_spawn_override );
 	replaceFunc( maps\_zombiemode_cymbal_monkey::play_sam_furnace, ::play_sam_furnace_override );
+	replaceFunc( maps\_zombiemode_dogs::dog_death, ::dog_death_override );
 	level thread reset_teleporter_cost();
 }
 
@@ -689,4 +690,39 @@ display_difficulty_increase_message()
 	wait 0.75;
 	hudelem maps\_hud_util::destroyelem();
 	level.showing_difficulty_increase_popup = false;
+}
+
+dog_death_override()
+{
+	self waittill( "death" );
+
+	if( maps\_zombiemode_utility::get_enemy_count() <= 0 && level.zombie_total <= 0 )
+	{
+
+		level.last_dog_origin = self.origin;
+		level notify( "last_dog_down" );
+
+	}
+
+	// score
+	if( IsPlayer( self.attacker ) )
+	{
+		self.attacker maps\_zombiemode_score::player_add_points( "death", self.damagemod, self.damagelocation, true );
+	}
+
+	// sound
+	self stoploopsound();
+
+	// fx
+	assert( IsDefined( self.fx_dog_eye ) );
+	self.fx_dog_eye delete();
+
+	assert( IsDefined( self.fx_dog_trail ) );
+	self.fx_dog_trail delete();
+
+	if ( IsDefined( self.a.nodeath ) )
+	{
+		level thread maps\_zombiemode_dogs::dog_explode_fx( self.origin );
+		self delete();
+	}
 }

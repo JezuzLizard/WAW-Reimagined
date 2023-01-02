@@ -116,7 +116,7 @@ set_zombie_spawn_rate_for_round( round_number )
 {
 	if ( !isDefined( level.starting_zombie_spawn_delay ) )
 	{
-		level.starting_zombie_spawn_delay = 2;
+		level.starting_zombie_spawn_delay = level.zombie_vars[ "zombie_spawn_delay" ];
 	}
 	timer = level.starting_zombie_spawn_delay;
 	for ( i = 1; i <= round_number; i++ )
@@ -133,12 +133,27 @@ set_zombie_spawn_rate_for_round( round_number )
 			break;
 		}
 	}
-	level.zombie_vars["zombie_spawn_delay"] = timer;
+	level.zombie_vars[ "zombie_spawn_delay" ] = timer;
+	if ( isDefined( level.zombie_spawnrate_bonus_func ) )
+	{
+		level [[ level.zombie_spawnrate_bonus_func ]]();
+	}
 }
 
 set_zombie_move_speed_for_round( round_number )
 {
-	level.zombie_move_speed = round_number * 8;
+	if ( round_number <= 1 )
+	{
+		level.zombie_move_speed = 1;
+	}
+	else 
+	{
+		level.zombie_move_speed = round_number * 8;
+	}
+	if ( isDefined( level.zombie_movespeed_bonus_func ) )
+	{
+		level [[ level.zombie_movespeed_bonus_func ]]();
+	}
 }
 
 set_zombie_health_for_round( round_number )
@@ -150,6 +165,10 @@ set_zombie_health_for_round( round_number )
 			level.zombie_health += int( level.zombie_health * level.zombie_vars["zombie_health_increase_percent"] );
 		else
 			level.zombie_health = int( level.zombie_health + level.zombie_vars["zombie_health_increase"] );
+	}
+	if ( isDefined( level.zombie_health_bonus_func ) )
+	{
+		level [[ level.zombie_health_bonus_func ]]();
 	}
 }
 
