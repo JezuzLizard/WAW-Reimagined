@@ -501,8 +501,7 @@ monkey_in_fire_zombie_health_bonus()
 	health = 0;
 	for ( i = 0; i < level.ee_world_difficulty; i++ )
 	{
-		health += int( level.zombie_health + level.zombie_vars["zombie_health_increase"] );
-		health += int( level.zombie_health * ( level.zombie_vars["zombie_health_increase_percent"] / 100 ) );
+		health += int( level.zombie_health * 0.05 );
 	}
 	return health;
 }
@@ -515,7 +514,7 @@ monkey_in_fire_dog_health_bonus()
 	}
 	for ( i = 0; i < level.ee_world_difficulty; i++ )
 	{
-		level.dog_health += 50;
+		level.dog_health += 25;
 	}
 }
 
