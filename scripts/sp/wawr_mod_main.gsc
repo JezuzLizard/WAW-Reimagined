@@ -149,7 +149,15 @@ spawn_zombie_override( spawner, target_name )
 zombie_death()
 {
 	self waittill( "death" );
-	level.zombie_kill_times[ getTime() + "" ] = true;
+
+	key = getTime() + "";
+
+	if (!isDefined(level.zombie_kill_times[ key ]))
+	{
+		level.zombie_kill_times[ key ] = 0;
+	}
+
+	level.zombie_kill_times[ key ]++;
 }
 
 enemy_counter_hud()
@@ -228,19 +236,24 @@ calculate_sph()
 	while ( true )
 	{
 		wait 0.05;
+		
 		kill_times = getArrayKeys( level.zombie_kill_times );
 		now = getTime();
 		kills_this_minute = 0;
+
 		for ( i = 0; i < kill_times.size; i++ )
 		{
 			kill_time = kill_times[ i ];
+			
 			if ( ( now - int( kill_time ) ) > 60000 )
 			{
 				level.zombie_kill_times[ kill_time ] = undefined;
 				continue;
 			}
-			kills_this_minute++;
+
+			kills_this_minute += level.zombie_kill_times[kill_time];
 		}
+
 		if ( kills_this_minute > 0 )
 		{
 			hordes_per_minute = kills_this_minute / 24;
@@ -248,7 +261,7 @@ calculate_sph()
 			seconds_per_horde = 1 / hordes_per_second;
 			level.sph_hud_counter = seconds_per_horde;
 		}
-		else 
+		else
 		{
 			level.sph_hud_counter = 0;
 		}
